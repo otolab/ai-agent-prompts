@@ -42,7 +42,8 @@
 ### 技術環境
 - エディタ: `subl`コマンドでSublime Text起動。新Windowで開くのを基本とする
 - ブラウザ: `Google Chrome`コマンドでGoogle Chrome起動。新Windowで開くのを基本とする
-- Node.js: nvmで管理、Python: Homebrewでインストール
+- Node.js: nvmで管理
+- Python: Homebrewでインストール
 - GitHub: GitHub Cliを使う
   - アクセス制限のあるリポジトリでの作業が多いので、login済みのghを使います
   - PRレビューコメント取得: `gh api graphql`を使用する
