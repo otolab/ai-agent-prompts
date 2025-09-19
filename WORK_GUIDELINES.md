@@ -47,7 +47,7 @@
 - GitHub: GitHub Cliを使う
   - アクセス制限のあるリポジトリでの作業が多いので、login済みのghを使います
   - PRレビューコメント取得: `gh api graphql`を使用する
-    - 詳細なクエリ例: [github-cli-queries.md](recipes/github-cli-queries.md)
+    - 詳細なクエリ例: `ISSUE_TRACKING_MODE.md`の技術的詳細セクション参照
 - **MCP (Model Context Protocol) 利用方針**:
   - Serena MCPが利用可能な場合は積極的に活用する
   - 利用可能なMCPツールは`mcp__`プレフィックスで識別

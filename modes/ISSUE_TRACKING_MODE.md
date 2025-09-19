@@ -131,8 +131,59 @@ Issue番号受信時に自動発動し、作業内容をコメントで体系的
 - `gh issue comment <number>` - コメント追加
 - `gh pr list --search="<query>"` - 関連PR検索
 
+### PRレビューコメントの取得（解決状態付き）
+
+レビューコメントとその解決状態を取得するGraphQLクエリ：
+
+```bash
+gh api graphql -f query='
+  {
+    repository(owner: "OWNER", name: "REPO") {
+      pullRequest(number: PR_NUMBER) {
+        reviewThreads(last: 30) {
+          nodes {
+            id
+            isResolved
+            isOutdated
+            resolvedBy {
+              login
+            }
+            comments(last: 10) {
+              nodes {
+                id
+                body
+                author {
+                  login
+                }
+                path
+                position
+                createdAt
+              }
+            }
+          }
+        }
+      }
+    }
+  }'
+```
+
+#### クエリの説明
+- `reviewThreads`: PRのレビューコメントスレッドを取得
+- `isResolved`: コメントが解決済みかどうか
+- `isOutdated`: コメントが古くなっているか（コードが変更されている）
+- `resolvedBy`: 解決したユーザー情報
+- `comments`: スレッド内のコメント一覧
+- `path`: コメントが付けられたファイルパス
+- `position`: コメントの位置
+
+#### 使用例
+未解決のコメントのみをフィルタ：
+```bash
+gh api graphql -f query='...' | jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+```
+
 ### Git操作の安全性
-詳細は `~/.claude/TECH_NOTES.md` を参照：
+詳細は `TECH_NOTES.md` を参照：
 - 編集ファイルの事前明確化
 - 個別ファイル追加（`git add -A` 禁止）
 - 予期しない変更への対処
