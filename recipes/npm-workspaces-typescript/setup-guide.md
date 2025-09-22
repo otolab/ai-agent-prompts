@@ -26,7 +26,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsc --build --verbose",
+    "build": "tsc --build --force --verbose",
     "clean": "tsc --build --clean"
   },
   "devDependencies": {
@@ -90,7 +90,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc --build --verbose"
+    "build": "tsc --build --force --verbose"
   }
 }
 ```
@@ -120,7 +120,7 @@
     "@my-org/shared": "*"
   },
   "scripts": {
-    "build": "tsc --build --verbose"
+    "build": "tsc --build --force --verbose"
   }
 }
 ```
@@ -209,6 +209,9 @@ npm install lodash -w @my-org/shared
    ```bash
    npm run build
    ```
+
+**注意**: `--force`オプションにより、キャッシュを無視して全ファイルを再生成します。
+`npm run build`は意図的にファイルを生成したいときに使用されるため、常に最新の出力が必要です。
 
 ## トラブルシューティング
 
