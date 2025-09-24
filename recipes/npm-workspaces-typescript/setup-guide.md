@@ -78,6 +78,26 @@
 - `files`と`include`は空配列
 - `references`にすべてのパッケージをリスト
 
+**注意**: ルートディレクトリにTypeScriptファイル（設定ファイル等）がある場合：
+```json
+{
+  "compilerOptions": {
+    "noEmit": true  // ルートでのビルドファイル生成を防止
+  },
+  "include": [
+    "packages/*/src/**/*"  // 型チェック対象を明示的に指定
+  ],
+  "exclude": [
+    "node_modules",
+    "**/dist",
+    "**/*.test.ts"
+  ]
+}
+```
+- `noEmit: true`でルートディレクトリでのビルドファイル生成を完全に防止
+- `include`で型チェックの範囲を適切に限定
+- 各パッケージは独自のtsconfig.jsonで実際のビルドを実行
+
 ### 2. パッケージレベルの設定
 
 #### ライブラリパッケージ（packages/shared）

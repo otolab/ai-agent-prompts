@@ -50,7 +50,6 @@ Issue番号受信時に自動発動し、作業内容をコメントで体系的
 - 適切なスタイル選択（メモ/報告）
   - メモの使用を主とすること
   - 書き方に関しては「コメントスタイル」参照
-- `*🤖 by Claude Code*` を最初に置き身元明示
 
 ### 6. 完了処理
 - 次のアクション明確化
@@ -94,9 +93,10 @@ Issue番号受信時に自動発動し、作業内容をコメントで体系的
 
 ## 基本動作
 
-### GitHub操作
+### GitHub操作（必須: 身元明示）
+**すべてのGitHubコメント（Issue、PR、レビュー）で冒頭に `*🤖 by Claude Code*` を記載**
+
 - Issue番号判明時点で即座に内容確認
-- `*🤖 by Claude Code*` で身元明示
 - `gh issue view --comments`, `gh pr view --comments`を活用
 - 明確な関係性記述（depends on, relates to, refs等）
 
@@ -131,56 +131,51 @@ Issue番号受信時に自動発動し、作業内容をコメントで体系的
 - `gh issue comment <number>` - コメント追加
 - `gh pr list --search="<query>"` - 関連PR検索
 
-### PRレビューコメントの取得（解決状態付き）
+### PRレビューコメントの取得と返信
 
-レビューコメントとその解決状態を取得するGraphQLクエリ：
-
+#### 未解決コメントの取得
 ```bash
-gh api graphql -f query='
-  {
-    repository(owner: "OWNER", name: "REPO") {
-      pullRequest(number: PR_NUMBER) {
-        reviewThreads(last: 30) {
-          nodes {
-            id
-            isResolved
-            isOutdated
-            resolvedBy {
-              login
-            }
-            comments(last: 10) {
-              nodes {
-                id
-                body
-                author {
-                  login
-                }
-                path
-                position
-                createdAt
-              }
+# 未解決のみ取得（推奨）
+gh api graphql -f query='{
+  repository(owner: "OWNER", name: "REPO") {
+    pullRequest(number: PR_NUMBER) {
+      reviewThreads(last: 30) {
+        nodes {
+          id
+          path
+          line
+          isResolved
+          comments(last: 1) {
+            nodes {
+              body
+              author { login }
             }
           }
         }
       }
     }
-  }'
+  }
+}' | jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {id, path, comment: .comments.nodes[0].body}'
 ```
 
-#### クエリの説明
-- `reviewThreads`: PRのレビューコメントスレッドを取得
-- `isResolved`: コメントが解決済みかどうか
-- `isOutdated`: コメントが古くなっているか（コードが変更されている）
-- `resolvedBy`: 解決したユーザー情報
-- `comments`: スレッド内のコメント一覧
-- `path`: コメントが付けられたファイルパス
-- `position`: コメントの位置
-
-#### 使用例
-未解決のコメントのみをフィルタ：
+#### レビューコメントへの返信
 ```bash
-gh api graphql -f query='...' | jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+gh api graphql -f query='
+mutation {
+  addPullRequestReviewThreadReply(input: {
+    pullRequestReviewThreadId: "THREAD_ID",
+    body: "*🤖 by Claude Code*\n\n修正済み: [具体的な修正内容]"
+  }) {
+    comment { id }
+  }
+}'
 ```
+
+#### 返信フォーマット
+**状況別：**
+- **修正完了**: `*🤖 by Claude Code*\n\n修正済み: [内容]`
+- **確認中**: `*🤖 by Claude Code*\n\n確認中: [質問内容]`
+- **保留**: `*🤖 by Claude Code*\n\n別PRで対応: Issue #XX`
 
 ### Git操作の安全性
 詳細は `TECH_NOTES.md` を参照：
