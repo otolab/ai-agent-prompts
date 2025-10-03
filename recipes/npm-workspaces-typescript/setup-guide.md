@@ -169,6 +169,43 @@
 
 ## 運用上の注意事項
 
+### スクリプトのエラーハンドリング
+
+npm workspacesには、複数ワークスペースのスクリプトを「順番に実行し、失敗時に停止する」組み込みオプションがありません。`--workspaces`フラグは全ワークスペースで並列実行され、1つが失敗しても他は継続されます。
+
+**問題のある設定**：
+```json
+{
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm test --workspaces",
+    "lint": "npm run lint --workspaces"
+  }
+}
+```
+これらは失敗しても次のワークスペースの処理が継続され、エラーを見逃す可能性があります。
+
+**推奨設定（明示的な順次実行）**：
+```json
+{
+  "scripts": {
+    "build": "npm run build -w @my-org/core && npm run build -w @my-org/utils && npm run build -w @my-org/app",
+    "test": "npm test -w @my-org/core && npm test -w @my-org/utils && npm test -w @my-org/app",
+    "lint": "npm run lint -w @my-org/core && npm run lint -w @my-org/utils && npm run lint -w @my-org/app"
+  }
+}
+```
+
+**メリット**：
+- 失敗時に即座に停止（`&&`演算子の効果）
+- 実行順序が明確（依存関係順に記述可能）
+- CI/CDでのエラー検出が確実
+- エラー箇所の特定が容易
+
+**デメリット**：
+- 新規パッケージ追加時にスクリプトも更新が必要
+- package.jsonが冗長になる
+
 ### npm installの実行場所
 
 **必ずルートディレクトリで実行**：
