@@ -120,7 +120,8 @@ FULL_QUERY="repo:$REPO $SEARCH_QUERY"
 ENCODED_QUERY=$(echo "$FULL_QUERY" | jq -Rr @uri)
 
 # GitHub REST APIでコード検索を実行
-RESPONSE=$(gh api "/search/code?q=${ENCODED_QUERY}&per_page=${LIMIT}" 2>/dev/null) || {
+# text_matchesを取得するためのヘッダーを追加
+RESPONSE=$(gh api --header "Accept: application/vnd.github.text-match+json" "/search/code?q=${ENCODED_QUERY}&per_page=${LIMIT}" 2>/dev/null) || {
     error "Failed to execute code search. Check your gh authentication and permissions."
 }
 
