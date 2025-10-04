@@ -123,25 +123,23 @@ def extract_highlights(text_match: Dict[str, Any]) -> List[str]:
 
 def process_search_results(data: Dict[str, Any]) -> None:
     """
-    Process GitHub code search results and locate line numbers from fragments.
+    Process GitHub code search results from REST API and locate line numbers from fragments.
+    Note: This script requires file contents to be fetched separately via gh api.
     """
-    edges = data.get('data', {}).get('search', {}).get('edges', [])
+    items = data.get('items', [])
 
-    if not edges:
+    if not items:
         print("No search results to process")
         return
 
     results_with_lines = 0
-    total_results = len(edges)
+    total_results = len(items)
 
-    for edge in edges:
-        node = edge.get('node', {})
-        text_matches = edge.get('textMatches', [])
-
-        repo = node.get('repository', {}).get('nameWithOwner', '')
-        path = node.get('path', '')
-        url = node.get('url', '')
-        full_text = node.get('text', '')
+    for item in items:
+        repo = item.get('repository', {}).get('full_name', '')
+        path = item.get('path', '')
+        url = item.get('html_url', '')
+        text_matches = item.get('text_matches', [])
 
         if not text_matches:
             continue
@@ -151,9 +149,13 @@ def process_search_results(data: Dict[str, Any]) -> None:
         print(f"File: {path}")
         print(f"URL: {url}")
 
-        if not full_text:
-            print("⚠️  Warning: Full text not available for line number detection")
-            continue
+        # Note: REST API doesn't provide full file content
+        # We would need to fetch it separately via:
+        # gh api /repos/{repo}/contents/{path} --jq '.content' | base64 -d
+        print("⚠️  Note: Full file content needs to be fetched separately for exact line matching")
+
+        # For now, just show the fragments
+        full_text = None
 
         found_any_match = False
 
@@ -169,10 +171,12 @@ def process_search_results(data: Dict[str, Any]) -> None:
 
             print(f"\n📝 Fragment {match_idx}: {fragment_preview}")
 
-            # Extract highlights if available
-            highlights = extract_highlights(match)
-            if highlights:
-                print(f"   Highlights: {', '.join(highlights[:3])}")
+            # Extract matches array if available (REST API format)
+            matches = match.get('matches', [])
+            if matches:
+                highlighted_terms = [m.get('text', '') for m in matches if m.get('text')]
+                if highlighted_terms:
+                    print(f"   Highlights: {', '.join(highlighted_terms[:3])}")
 
             # Find line numbers
             line_matches = find_fragment_in_text(fragment, full_text)

@@ -165,7 +165,7 @@ Run ID: 1234567890
 
 ### search-code.sh
 
-GitHub GraphQL APIを使用してコード検索を行い、検索結果のfragmentから行番号を特定するスクリプトです。
+GitHub REST APIを使用してコード検索を行い、検索結果のfragmentから行番号を特定するスクリプトです。
 
 #### 使用方法
 ```bash
@@ -225,18 +225,22 @@ URL: https://github.com/owner/repo/blob/main/src/auth/authenticator.js
 - Python 3（`--locate-lines`オプション使用時）
 
 #### 技術詳細
-- GitHub GraphQL APIのコード検索機能を使用
-- 検索結果にはfragmentのみが含まれ、直接の行番号は取得できないため、`locate_lines_from_fragment.py`で後処理
+- GitHub REST API（`/search/code`エンドポイント）を使用
+- 検索結果にはfragmentのみが含まれ、直接の行番号は取得できません
+- `--locate-lines`オプション使用時は、各ファイルの完全な内容を`/repos/{owner}/{repo}/contents/{path}`から取得
+- fragmentとファイル内容を照合して行番号を特定
 - 検索クエリはGitHubのコード検索構文に従います
 
 ### locate_lines_from_fragment.py
 
-`search-code.sh`の補助スクリプトで、GraphQL検索結果のfragmentから実際の行番号を特定します。
+`search-code.sh`の補助スクリプトで、REST API検索結果のfragmentから実際の行番号を特定します。
 
 #### 単体での使用方法
 ```bash
-gh api graphql -f query='...' | python3 locate_lines_from_fragment.py
+gh api "/search/code?q=query" | python3 locate_lines_from_fragment.py
 ```
+
+注意: REST APIはファイル内容を含まないため、行番号の正確な特定にはファイル内容の別途取得が必要です。
 
 #### 機能
 - 正規化による空白の差異を吸収

@@ -113,48 +113,20 @@ echo "Searching in repository: $REPO" >&2
 echo "Query: $SEARCH_QUERY" >&2
 echo "" >&2
 
-# GraphQLクエリを構築
-# リポジトリ指定を含む検索クエリを構築
+# REST API用のクエリを構築
 FULL_QUERY="repo:$REPO $SEARCH_QUERY"
 
-# GraphQLクエリ
-read -r -d '' GRAPHQL_QUERY << EOF || true
-{
-  search(query: "$FULL_QUERY", type: CODE, first: $LIMIT) {
-    codeCount
-    edges {
-      node {
-        ... on Blob {
-          repository {
-            nameWithOwner
-          }
-          path
-          url
-          text
-        }
-      }
-      textMatches {
-        fragment
-        property
-        highlights {
-          text
-          beginIndice
-          endIndice
-        }
-      }
-    }
-  }
-}
-EOF
+# URLエンコード（簡易版）
+ENCODED_QUERY=$(echo "$FULL_QUERY" | jq -Rr @uri)
 
-# GraphQLクエリを実行
-RESPONSE=$(gh api graphql -f query="$GRAPHQL_QUERY" 2>/dev/null) || {
-    error "Failed to execute GraphQL query. Check your gh authentication and permissions."
+# GitHub REST APIでコード検索を実行
+RESPONSE=$(gh api "/search/code?q=${ENCODED_QUERY}&per_page=${LIMIT}" 2>/dev/null) || {
+    error "Failed to execute code search. Check your gh authentication and permissions."
 }
 
 # 結果をチェック
-CODE_COUNT=$(echo "$RESPONSE" | jq -r '.data.search.codeCount')
-if [[ "$CODE_COUNT" == "0" ]]; then
+CODE_COUNT=$(echo "$RESPONSE" | jq -r '.total_count')
+if [[ "$CODE_COUNT" == "0" || "$CODE_COUNT" == "null" ]]; then
     echo "No results found for query: $SEARCH_QUERY" >&2
     exit 0
 fi
@@ -165,33 +137,33 @@ echo "" >&2
 # 結果を処理
 if [[ "$OUTPUT_FORMAT" == "json" ]]; then
     # JSON形式で出力
-    echo "$RESPONSE" | jq '.data.search.edges'
+    echo "$RESPONSE" | jq '.items'
 elif [[ "$OUTPUT_FORMAT" == "tsv" ]]; then
     # TSV形式で出力
     echo -e "Repository\tPath\tURL"
-    echo "$RESPONSE" | jq -r '.data.search.edges[] |
-        [.node.repository.nameWithOwner, .node.path, .node.url] | @tsv'
+    echo "$RESPONSE" | jq -r '.items[] |
+        [.repository.full_name, .path, .html_url] | @tsv'
 
     if [[ "$SHOW_FRAGMENTS" == "true" ]]; then
         echo "" >&2
         echo "=== Fragments ===" >&2
-        echo "$RESPONSE" | jq -r '.data.search.edges[] |
-            "File: \(.node.path)",
-            (.textMatches[] | "  Fragment: \(.fragment)")'
+        echo "$RESPONSE" | jq -r '.items[] |
+            "File: \(.path)",
+            (.text_matches[]? | "  Fragment: \(.fragment)")'
     fi
 else
     # テーブル形式で出力（デフォルト）
-    echo "$RESPONSE" | jq -r '.data.search.edges[] |
-        "Repository: \(.node.repository.nameWithOwner)",
-        "Path: \(.node.path)",
-        "URL: \(.node.url)",
+    echo "$RESPONSE" | jq -r '.items[] |
+        "Repository: \(.repository.full_name)",
+        "Path: \(.path)",
+        "URL: \(.html_url)",
         ""'
 
     if [[ "$SHOW_FRAGMENTS" == "true" ]]; then
         echo "=== Code Fragments ===" >&2
-        echo "$RESPONSE" | jq -r '.data.search.edges[] |
-            "File: \(.node.path)",
-            (.textMatches[] |
+        echo "$RESPONSE" | jq -r '.items[] |
+            "File: \(.path)",
+            (.text_matches[]? |
                 "  Fragment: \(.fragment | gsub("\n"; "\\n") | .[0:200])"
             ),
             ""'
@@ -200,122 +172,59 @@ fi
 
 # 行番号の特定を試みる
 if [[ "$LOCATE_LINES" == "true" ]]; then
-    # Pythonスクリプトのパスを取得
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    PYTHON_SCRIPT="$SCRIPT_DIR/locate_lines_from_fragment.py"
-
-    if [[ ! -f "$PYTHON_SCRIPT" ]]; then
-        echo "" >&2
-        echo "Warning: Python script for line location not found at: $PYTHON_SCRIPT" >&2
-        echo "Creating the Python helper script..." >&2
-
-        # Pythonヘルパースクリプトを作成
-        cat > "$PYTHON_SCRIPT" << 'PYTHON_EOF'
-#!/usr/bin/env python3
-
-import json
-import sys
-import re
-from typing import List, Dict, Any, Optional, Tuple
-
-def find_fragment_in_text(fragment: str, full_text: str) -> List[Tuple[int, str]]:
-    """
-    Find fragment in full text and return line numbers with matched lines.
-    """
-    # Normalize whitespace for matching
-    fragment_normalized = re.sub(r'\s+', ' ', fragment.strip())
-
-    lines = full_text.split('\n')
-    matches = []
-
-    # Try to find exact matches first
-    for i, line in enumerate(lines, 1):
-        line_normalized = re.sub(r'\s+', ' ', line.strip())
-        if fragment_normalized in line_normalized:
-            matches.append((i, line))
-
-    # If no exact matches, try to find partial matches
-    if not matches:
-        fragment_words = fragment_normalized.split()
-        if len(fragment_words) > 3:
-            # Try matching with first and last few words
-            start_pattern = ' '.join(fragment_words[:3])
-            end_pattern = ' '.join(fragment_words[-3:])
-
-            for i, line in enumerate(lines, 1):
-                line_normalized = re.sub(r'\s+', ' ', line.strip())
-                if start_pattern in line_normalized or end_pattern in line_normalized:
-                    matches.append((i, line))
-
-    return matches
-
-def process_search_results(data: Dict[str, Any]) -> None:
-    """
-    Process GitHub code search results and locate line numbers from fragments.
-    """
-    edges = data.get('data', {}).get('search', {}).get('edges', [])
-
-    for edge in edges:
-        node = edge.get('node', {})
-        text_matches = edge.get('textMatches', [])
-
-        if not text_matches:
-            continue
-
-        repo = node.get('repository', {}).get('nameWithOwner', '')
-        path = node.get('path', '')
-        url = node.get('url', '')
-        full_text = node.get('text', '')
-
-        if not full_text:
-            print(f"\nFile: {repo}/{path}")
-            print(f"URL: {url}")
-            print("Warning: Full text not available")
-            continue
-
-        print(f"\nFile: {repo}/{path}")
-        print(f"URL: {url}")
-
-        for match in text_matches:
-            fragment = match.get('fragment', '')
-            if not fragment:
-                continue
-
-            print(f"\nFragment: {fragment[:100]}...")
-
-            # Find line numbers
-            line_matches = find_fragment_in_text(fragment, full_text)
-
-            if line_matches:
-                print("Located at lines:")
-                for line_num, line_text in line_matches[:5]:  # Show max 5 matches
-                    # Construct GitHub URL with line number
-                    line_url = f"{url}#L{line_num}"
-                    print(f"  Line {line_num}: {line_text[:80]}...")
-                    print(f"  URL: {line_url}")
-            else:
-                print("  Could not locate exact line numbers")
-
-def main():
-    # Read JSON from stdin
-    try:
-        data = json.load(sys.stdin)
-        process_search_results(data)
-    except json.JSONDecodeError as e:
-        print(f"Error parsing JSON: {e}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
-PYTHON_EOF
-        chmod +x "$PYTHON_SCRIPT"
-    fi
-
-    # Pythonスクリプトを実行
     echo "" >&2
     echo "=== Locating Line Numbers ===" >&2
-    echo "$RESPONSE" | python3 "$PYTHON_SCRIPT"
+
+    # 各ファイルのコンテンツを取得して行番号を特定
+    echo "$RESPONSE" | jq -c '.items[]' | while read -r item; do
+        REPO_NAME=$(echo "$item" | jq -r '.repository.full_name')
+        FILE_PATH=$(echo "$item" | jq -r '.path')
+        FILE_URL=$(echo "$item" | jq -r '.html_url')
+        SHA=$(echo "$item" | jq -r '.sha')
+
+        echo "" >&2
+        echo "Processing: $REPO_NAME/$FILE_PATH" >&2
+
+        # ファイルの完全な内容を取得
+        FILE_CONTENT=$(gh api "/repos/$REPO_NAME/contents/$FILE_PATH" --jq '.content' 2>/dev/null | base64 -d 2>/dev/null) || {
+            echo "  ⚠️  Could not fetch file content" >&2
+            continue
+        }
+
+        # text_matchesからfragmentを取得して処理
+        echo "$item" | jq -r '.text_matches[]? | .fragment' | while IFS= read -r fragment; do
+            if [[ -z "$fragment" ]]; then
+                continue
+            fi
+
+            # fragmentの最初の行で検索
+            FRAGMENT_PREVIEW=$(echo "$fragment" | head -1 | cut -c1-60)
+            echo "  Fragment: $FRAGMENT_PREVIEW..." >&2
+
+            # ファイル内容から行番号を検索
+            LINE_NUM=0
+            FOUND=false
+
+            while IFS= read -r line; do
+                LINE_NUM=$((LINE_NUM + 1))
+
+                # 正規化して比較（空白を統一）
+                NORMALIZED_LINE=$(echo "$line" | tr -s ' ' | tr -d '\r')
+                NORMALIZED_FRAGMENT=$(echo "$fragment" | head -1 | tr -s ' ' | tr -d '\r')
+
+                if [[ "$NORMALIZED_LINE" == *"$NORMALIZED_FRAGMENT"* ]]; then
+                    echo "  📍 Found at line $LINE_NUM: $FILE_URL#L$LINE_NUM" >&2
+                    FOUND=true
+                    break
+                fi
+            done <<< "$FILE_CONTENT"
+
+            if [[ "$FOUND" == "false" ]]; then
+                echo "  ❌ Could not locate exact line number" >&2
+            fi
+        done
+    done
+
+    exit 0
 fi
+
