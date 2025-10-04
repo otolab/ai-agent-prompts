@@ -1,6 +1,6 @@
-# GitHub Issue管理スクリプト集
+# GitHub操作スクリプト集
 
-GitHubのIssue管理を効率化するためのスクリプト集です。
+GitHubのIssue管理とコード検索を効率化するためのスクリプト集です。
 
 ## スクリプト一覧
 
@@ -162,6 +162,87 @@ Run ID: 1234567890
 - GitHub CLI (`gh`) がインストール済み
 - リポジトリへの読み取りアクセス権限
 - PR作成済みのブランチ（PR番号省略時）
+
+### search-code.sh
+
+GitHub GraphQL APIを使用してコード検索を行い、検索結果のfragmentから行番号を特定するスクリプトです。
+
+#### 使用方法
+```bash
+./search-code.sh [OPTIONS] <search_query>
+```
+
+#### オプション
+- `-r, --repo OWNER/REPO`: 検索対象リポジトリ（省略時は現在のリポジトリ）
+- `-l, --limit NUMBER`: 最大結果数（デフォルト: 10、最大: 100）
+- `-f, --format FORMAT`: 出力形式（table, json, tsv。デフォルト: table）
+- `-s, --show-fragments`: コードfragmentを表示
+- `-L, --locate-lines`: fragmentから行番号を特定（Python 3が必要）
+- `-h, --help`: ヘルプを表示
+
+#### 例
+```bash
+# 現在のリポジトリで検索
+./search-code.sh "function authenticate"
+
+# 特定リポジトリでfragment付きで検索
+./search-code.sh -r "owner/repo" -s "TODO"
+
+# 行番号を特定して検索
+./search-code.sh -r "owner/repo" -L "error handling"
+
+# JSON形式で結果を取得
+./search-code.sh -f json "class.*Controller"
+```
+
+#### 行番号特定機能
+`--locate-lines`オプションを使用すると、検索結果のfragmentから実際のファイル内の行番号を特定します。
+
+**特定方法**:
+1. 完全一致: fragmentとファイル内容の正規化後の完全一致
+2. 複数行マッチング: fragmentが複数行の場合、最初の行から順次マッチング
+3. ファジーマッチング: 類似度スコアによる近似マッチ（80%以上の類似度）
+4. キーワードマッチング: 重要な識別子（class名、function名など）による特定
+
+**出力例**:
+```
+============================================================
+Repository: owner/repo
+File: src/auth/authenticator.js
+URL: https://github.com/owner/repo/blob/main/src/auth/authenticator.js
+
+📝 Fragment 1: function authenticate(username, password) {\\n  if (!username || !pass...
+   Highlights: authenticate, username, password
+
+📍 Located at:
+   Line 42 ✓✓✓: function authenticate(username, password) {
+   → https://github.com/owner/repo/blob/main/src/auth/authenticator.js#L42
+```
+
+#### 必要な環境
+- GitHub CLI (`gh`) がインストール済みで認証済み
+- 検索対象リポジトリへの読み取りアクセス権限
+- Python 3（`--locate-lines`オプション使用時）
+
+#### 技術詳細
+- GitHub GraphQL APIのコード検索機能を使用
+- 検索結果にはfragmentのみが含まれ、直接の行番号は取得できないため、`locate_lines_from_fragment.py`で後処理
+- 検索クエリはGitHubのコード検索構文に従います
+
+### locate_lines_from_fragment.py
+
+`search-code.sh`の補助スクリプトで、GraphQL検索結果のfragmentから実際の行番号を特定します。
+
+#### 単体での使用方法
+```bash
+gh api graphql -f query='...' | python3 locate_lines_from_fragment.py
+```
+
+#### 機能
+- 正規化による空白の差異を吸収
+- 複数行fragmentの連続性チェック
+- ファジーマッチングによる近似一致検出
+- 信頼度スコアの表示（✓✓✓: 90%以上、✓✓: 70-90%、✓: 70%未満）
 
 ## トラブルシューティング
 
