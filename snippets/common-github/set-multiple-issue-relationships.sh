@@ -19,7 +19,12 @@ shift 2  # 最初の2つの引数を削除
 
 echo "Repository: $REPO"
 echo "Parent Issue: #$PARENT_ISSUE"
-echo "Child Issues: #$@"
+# 各Issue番号に#を付けて表示
+CHILD_ISSUES_DISPLAY=""
+for issue in "$@"; do
+    CHILD_ISSUES_DISPLAY="${CHILD_ISSUES_DISPLAY}#$issue "
+done
+echo "Child Issues: ${CHILD_ISSUES_DISPLAY}"
 echo
 
 # 親IssueのNode IDを取得
