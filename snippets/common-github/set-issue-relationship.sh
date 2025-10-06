@@ -1,8 +1,13 @@
 #!/bin/bash
 
-# GitHub Issues間の親子関係を設定するスクリプト
+# GitHub Issues間の親子関係を設定するスクリプト（単一子Issue用ラッパー）
+# 統合版のset-issue-relationships.shを呼び出します
+#
 # 使用方法: ./set-issue-relationship.sh <repo> <parent-issue-number> <child-issue-number>
 # 例: ./set-issue-relationship.sh plaidev/karte-io-systems 130482 134277
+#
+# 注意: このスクリプトは後方互換性のために残されています。
+#       新規利用時はset-issue-relationships.shの使用を推奨します。
 
 set -e
 
@@ -10,68 +15,21 @@ set -e
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <repo> <parent-issue-number> <child-issue-number>"
     echo "Example: $0 plaidev/karte-io-systems 130482 134277"
+    echo ""
+    echo "Note: This script is maintained for backward compatibility."
+    echo "      Consider using set-issue-relationships.sh instead."
     exit 1
 fi
 
-REPO="$1"
-PARENT_ISSUE="$2"
-CHILD_ISSUE="$3"
+# 統合版スクリプトのパスを取得
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UNIFIED_SCRIPT="$SCRIPT_DIR/set-issue-relationships.sh"
 
-echo "Setting relationship: Issue #$PARENT_ISSUE (parent) <- Issue #$CHILD_ISSUE (child)"
-echo "Repository: $REPO"
-echo
-
-# 親IssueのNode IDを取得
-echo "Fetching parent issue node ID..."
-PARENT_NODE_ID=$(gh issue view "$PARENT_ISSUE" --repo "$REPO" --json id --jq '.id')
-if [ -z "$PARENT_NODE_ID" ]; then
-    echo "Error: Could not fetch parent issue #$PARENT_ISSUE"
+# 統合版スクリプトが存在するか確認
+if [ ! -f "$UNIFIED_SCRIPT" ]; then
+    echo "Error: Unified script not found at $UNIFIED_SCRIPT"
     exit 1
 fi
-echo "Parent node ID: $PARENT_NODE_ID"
 
-# 子IssueのNode IDを取得
-echo "Fetching child issue node ID..."
-CHILD_NODE_ID=$(gh issue view "$CHILD_ISSUE" --repo "$REPO" --json id --jq '.id')
-if [ -z "$CHILD_NODE_ID" ]; then
-    echo "Error: Could not fetch child issue #$CHILD_ISSUE"
-    exit 1
-fi
-echo "Child node ID: $CHILD_NODE_ID"
-
-# GraphQL mutationを実行
-echo
-echo "Setting sub-issue relationship..."
-RESULT=$(gh api graphql \
-  --raw-field query='
-    mutation addSubIssue($issueId: ID!, $subIssueId: ID!) {
-      addSubIssue(input: {issueId: $issueId, subIssueId: $subIssueId}) {
-        issue {
-          title
-          number
-        }
-        subIssue {
-          title
-          number
-        }
-      }
-    }' \
-  -F issueId="$PARENT_NODE_ID" \
-  -F subIssueId="$CHILD_NODE_ID" \
-  --header 'GraphQL-Features: sub_issues' 2>&1) || {
-    echo "Error executing GraphQL mutation:"
-    echo "$RESULT"
-    exit 1
-}
-
-# 結果を解析して表示
-if echo "$RESULT" | grep -q '"errors"'; then
-    echo "Error setting relationship:"
-    echo "$RESULT" | jq '.errors'
-    exit 1
-else
-    echo "Success! Relationship created:"
-    echo "$RESULT" | jq '.data.addSubIssue'
-    echo
-    echo "✅ Issue #$CHILD_ISSUE is now a sub-issue of Issue #$PARENT_ISSUE"
-fi
+# 統合版スクリプトを呼び出す
+exec "$UNIFIED_SCRIPT" "$@"

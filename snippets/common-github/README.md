@@ -4,18 +4,22 @@ GitHubのIssue管理とコード検索を効率化するためのスクリプト
 
 ## スクリプト一覧
 
-### set-issue-relationship.sh
+### set-issue-relationships.sh（統合版）
 
-GitHub Issues間の親子関係を設定するスクリプトです。
+GitHub Issues間の親子関係を設定するスクリプトです。単一または複数の子Issueに対応しています。
 
 #### 使用方法
 ```bash
-./set-issue-relationship.sh <repo> <parent-issue-number> <child-issue-number>
+./set-issue-relationships.sh <repo> <parent-issue-number> <child-issue-number1> [child-issue-number2 ...]
 ```
 
 #### 例
 ```bash
-./set-issue-relationship.sh plaidev/karte-io-systems 130482 134277
+# 単一の子Issue
+./set-issue-relationships.sh plaidev/karte-io-systems 130482 134277
+
+# 複数の子Issue
+./set-issue-relationships.sh plaidev/karte-io-systems 130482 134277 134278 134279
 ```
 
 #### 必要な権限
@@ -27,20 +31,12 @@ GitHub Issues間の親子関係を設定するスクリプトです。
 - `GraphQL-Features: sub_issues`ヘッダーが必要です
 - 親子関係は一方向のみ（子から親への参照）
 
-### set-multiple-issue-relationships.sh
+### set-issue-relationship.sh / set-multiple-issue-relationships.sh（レガシー）
 
-一つの親Issueに対して複数の子Issueを一括で設定するスクリプトです。
+これらは後方互換性のために残されているラッパースクリプトです。新規利用時は`set-issue-relationships.sh`の使用を推奨します。
 
-#### 使用方法
-```bash
-./set-multiple-issue-relationships.sh <repo> <parent-issue-number> <child-issue-number1> [child-issue-number2 ...]
-```
-
-#### 例
-```bash
-# Issue #130482を親として、#134277と#134278を子Issueとして設定
-./set-multiple-issue-relationships.sh plaidev/karte-io-systems 130482 134277 134278
-```
+- `set-issue-relationship.sh`: 単一の子Issue専用（統合版を呼び出し）
+- `set-multiple-issue-relationships.sh`: 複数の子Issue用（統合版を呼び出し）
 
 #### 出力例
 ```
