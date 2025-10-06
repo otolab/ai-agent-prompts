@@ -251,6 +251,31 @@ gh auth refresh -h github.com -s read:project,write:project
 ### エラー: "Could not fetch issue"
 指定されたIssue番号が存在しないか、アクセス権限がありません。
 
+## GitHub APIの活用Tips
+
+### Issue/PRコメントの直接取得
+
+GitHubのコメントURLから直接コメント内容を取得する方法：
+
+```bash
+# コメントURLの例: https://github.com/owner/repo/issues/123#issuecomment-3336557377
+# issuecomment-の後の数字（3336557377）がコメントID
+
+# gh APIでコメントを取得
+gh api /repos/owner/repo/issues/comments/3336557377
+
+# 特定のフィールドのみ取得
+gh api /repos/owner/repo/issues/comments/3336557377 --jq '.body'
+
+# コメントの作成者と内容を取得
+gh api /repos/owner/repo/issues/comments/3336557377 --jq '{author: .user.login, body: .body}'
+```
+
+**注意事項**:
+- URLの`#issuecomment-`の後の数字がコメントIDです
+- PRのコメントも同じ方法で取得可能（issues/commentsエンドポイントを使用）
+- リポジトリへの読み取りアクセス権限が必要
+
 ## 参考情報
 
 - [GitHub GraphQL API Documentation](https://docs.github.com/en/graphql)
