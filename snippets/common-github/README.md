@@ -154,7 +154,7 @@ Run ID: 1234567890
 
 ### search-code.sh
 
-GitHub REST APIを使用してコード検索を行い、検索結果のfragmentから行番号を特定するスクリプトです。
+GitHub REST APIを使用してコード検索を行い、自動ページネーション対応で100件以上の結果も取得可能なスクリプトです。
 
 #### 使用方法
 ```bash
@@ -163,22 +163,29 @@ GitHub REST APIを使用してコード検索を行い、検索結果のfragment
 
 #### オプション
 - `-r, --repo OWNER/REPO`: 検索対象リポジトリ（省略時は現在のリポジトリ）
-- `-l, --limit NUMBER`: 最大結果数（デフォルト: 10、最大: 100）
+- `-o, --org ORGANIZATION`: 検索対象Organization（--repoと同時使用不可）
+- `-l, --limit NUMBER`: 最大結果数（デフォルト: 10、上限なし、自動ページネーション）
 - `-f, --format FORMAT`: 出力形式（table, json, tsv。デフォルト: table）
 - `-s, --show-fragments`: コードfragmentを表示
-- `-L, --locate-lines`: fragmentから行番号を特定（Python 3が必要）
+- `-L, --locate-lines`: fragmentから行番号を特定
 - `-h, --help`: ヘルプを表示
 
 #### 例
 ```bash
-# 現在のリポジトリで検索
+# 現在のリポジトリで検索（上位10件）
 ./search-code.sh "function authenticate"
 
 # 特定リポジトリでfragment付きで検索
 ./search-code.sh -r "owner/repo" -s "TODO"
 
+# Organization全体で検索
+./search-code.sh -o "myorg" "security vulnerability"
+
+# 100件以上の結果を取得（自動ページネーション）
+./search-code.sh -r "owner/repo" -l 250 "error handling"
+
 # 行番号を特定して検索
-./search-code.sh -r "owner/repo" -L "error handling"
+./search-code.sh -r "owner/repo" -L "async function"
 
 # JSON形式で結果を取得
 ./search-code.sh -f json "class.*Controller"
@@ -215,6 +222,8 @@ URL: https://github.com/owner/repo/blob/main/src/auth/authenticator.js
 
 #### 技術詳細
 - GitHub REST API（`/search/code`エンドポイント）を使用
+- **自動ページネーション**: 100件を超える結果は複数ページを自動取得
+- API制限: 最大1000件まで取得可能（GitHub APIの仕様）
 - 検索結果にはfragmentのみが含まれ、直接の行番号は取得できません
 - `--locate-lines`オプション使用時は、各ファイルの完全な内容を`/repos/{owner}/{repo}/contents/{path}`から取得
 - fragmentとファイル内容を照合して行番号を特定
