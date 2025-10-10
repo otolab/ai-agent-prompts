@@ -47,7 +47,7 @@ if [ "$CLAUDE_CODE_TOOL_NAME" == "Bash" ]; then
             # Count modified files
             if git rev-parse --git-dir > /dev/null 2>&1; then
                 MODIFIED_COUNT=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-                WARNING="[git] ⚠️ ${MODIFIED_COUNT}個のファイルが対象 (git add -A/.) - git statusで確認を推奨"
+                WARNING="[git] ⚠️ ${MODIFIED_COUNT}個のファイルが対象 (git add -A/.) - git statusで内容を確認してください"
                 if [ -z "$MESSAGES" ]; then
                     MESSAGES="$WARNING"
                 else
