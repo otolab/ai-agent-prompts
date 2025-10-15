@@ -1,0 +1,19 @@
+{
+  "name": "agent-prompts",
+  "version": "1.0.0",
+  "description": "AI Agent基本原則・動作モード・カスタムコマンド",
+  "author": {
+    "name": "otolab"
+  },
+  "homepage": "https://github.com/otolab/ai-agent-prompts",
+  "repository": "https://github.com/otolab/ai-agent-prompts",
+  "license": "MIT",
+  "keywords": [
+    "ai-agent",
+    "claude-code",
+    "prompts",
+    "guidelines",
+    "japanese"
+  ],
+  "hooks": "./hooks/hooks.json"
+}

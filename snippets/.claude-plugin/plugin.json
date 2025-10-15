@@ -1,0 +1,17 @@
+{
+  "name": "snippets",
+  "version": "1.0.0",
+  "description": "再利用可能なスクリプト・ツール集",
+  "author": {
+    "name": "otolab"
+  },
+  "homepage": "https://github.com/otolab/ai-agent-prompts",
+  "repository": "https://github.com/otolab/ai-agent-prompts",
+  "license": "MIT",
+  "keywords": [
+    "snippets",
+    "scripts",
+    "tools",
+    "utilities"
+  ]
+}

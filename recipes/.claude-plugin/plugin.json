@@ -1,0 +1,17 @@
+{
+  "name": "recipes",
+  "version": "1.0.0",
+  "description": "開発パターンとベストプラクティス集",
+  "author": {
+    "name": "otolab"
+  },
+  "homepage": "https://github.com/otolab/ai-agent-prompts",
+  "repository": "https://github.com/otolab/ai-agent-prompts",
+  "license": "MIT",
+  "keywords": [
+    "recipes",
+    "patterns",
+    "best-practices",
+    "development"
+  ]
+}

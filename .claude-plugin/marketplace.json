@@ -1,0 +1,33 @@
+{
+  "name": "otolab",
+  "owner": {
+    "name": "otolab"
+  },
+  "metadata": {
+    "description": "AI Agent向けのプロンプト・スクリプト・レシピ集",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "agent-prompts",
+      "source": "./agent-prompts",
+      "description": "AI Agent基本原則・動作モード・カスタムコマンド",
+      "version": "1.0.0",
+      "keywords": ["foundation", "guidelines", "modes", "commands"]
+    },
+    {
+      "name": "recipes",
+      "source": "./recipes",
+      "description": "開発パターンとベストプラクティス集",
+      "version": "1.0.0",
+      "keywords": ["patterns", "best-practices", "development"]
+    },
+    {
+      "name": "snippets",
+      "source": "./snippets",
+      "description": "再利用可能なスクリプト・ツール集",
+      "version": "1.0.0",
+      "keywords": ["scripts", "tools", "utilities"]
+    }
+  ]
+}
