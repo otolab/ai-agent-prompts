@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mode-controller": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcps/mode-controller/dist/server.js",
+        "--modes-path",
+        "${CLAUDE_PLUGIN_ROOT}/prompts/modes"
+      ]
+    }
+  }
+}

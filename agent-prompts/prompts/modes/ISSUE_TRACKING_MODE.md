@@ -1,3 +1,14 @@
+---
+mode: issue_tracking
+displayName: Issue追跡モード
+autoTrigger:
+  - Issue番号受信時（#123, Issue 456等）
+  - ユーザとの対話で作業Issueが明確になった時
+exitMessage: |
+  Issue追跡モードを終了しました。
+  作業内容はIssueコメントに記録されています。
+---
+
 # Issue追跡モード
 
 ## 概要
