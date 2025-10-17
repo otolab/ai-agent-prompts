@@ -285,6 +285,71 @@ gh api /repos/owner/repo/issues/comments/3336557377 --jq '{author: .user.login, 
 - PRのコメントも同じ方法で取得可能（issues/commentsエンドポイントを使用）
 - リポジトリへの読み取りアクセス権限が必要
 
+### PRレビューコメントの取得と返信
+
+PRのレビューコメント（コードレビュー）を取得し、返信する方法：
+
+#### 未解決レビューコメントの取得
+
+```bash
+# 未解決のレビューコメントのみ取得（推奨）
+gh api graphql -f query='{
+  repository(owner: "OWNER", name: "REPO") {
+    pullRequest(number: PR_NUMBER) {
+      reviewThreads(last: 30) {
+        nodes {
+          id
+          path
+          line
+          isResolved
+          comments(last: 1) {
+            nodes {
+              body
+              author { login }
+            }
+          }
+        }
+      }
+    }
+  }
+}' | jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {id, path, comment: .comments.nodes[0].body}'
+```
+
+#### レビューコメントへの返信
+
+```bash
+# レビューコメントスレッドに返信
+gh api graphql -f query='
+mutation {
+  addPullRequestReviewThreadReply(input: {
+    pullRequestReviewThreadId: "THREAD_ID",
+    body: "*🤖 by Claude Code*\n\n修正済み: [具体的な修正内容]"
+  }) {
+    comment { id }
+  }
+}'
+```
+
+#### 返信フォーマット例
+
+状況に応じた返信例：
+
+```bash
+# 修正完了時
+"*🤖 by Claude Code*\n\n修正済み: [具体的な修正内容]"
+
+# 確認中の場合
+"*🤖 by Claude Code*\n\n確認中: [質問内容]"
+
+# 別PRで対応する場合
+"*🤖 by Claude Code*\n\n別PRで対応: Issue #XX"
+```
+
+**注意事項**:
+- すべてのGitHubコメント（Issue、PR、レビュー）で冒頭に `*🤖 by Claude Code*` を記載して身元を明示
+- `THREAD_ID`はGraphQL APIで取得したレビュースレッドのID
+- レビューコメントはIssueコメントとは異なるAPIエンドポイントを使用
+
 ## 参考情報
 
 - [GitHub GraphQL API Documentation](https://docs.github.com/en/graphql)

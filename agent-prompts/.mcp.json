@@ -6,7 +6,7 @@
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/mcps/mode-controller/dist/server.js",
         "--modes-path",
-        "${CLAUDE_PLUGIN_ROOT}/prompts/modes"
+        "${CLAUDE_PLUGIN_ROOT}/prompts/modes,${CLAUDE_PLUGIN_ROOT}/../products"
       ]
     }
   }

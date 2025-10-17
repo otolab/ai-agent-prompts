@@ -20,43 +20,68 @@ interface ParsedMode {
 
 class ModeController {
   private activeModes: Set<string> = new Set();
-  private modesPath: string;
+  private modesPaths: string[];
   private availableModes: Map<string, ParsedMode> = new Map();
 
-  constructor(modesPath: string) {
-    this.modesPath = modesPath;
+  constructor(modesPaths: string[]) {
+    this.modesPaths = modesPaths;
   }
 
   async initialize(): Promise<void> {
-    console.error(`[mode-controller] Initializing with modes path: ${this.modesPath}`);
+    console.error(`[mode-controller] Initializing with modes paths: ${this.modesPaths.join(', ')}`);
     await this.loadModes();
   }
 
   private async loadModes(): Promise<void> {
-    try {
-      const files = await fs.readdir(this.modesPath);
-      const mdFiles = files.filter(f => f.endsWith('.md'));
+    for (const modesPath of this.modesPaths) {
+      try {
+        // ディレクトリが存在するかチェック
+        try {
+          await fs.access(modesPath);
+        } catch {
+          console.error(`[mode-controller] Directory not found, skipping: ${modesPath}`);
+          continue;
+        }
 
-      for (const file of mdFiles) {
-        const modeName = path.basename(file, '.md').toLowerCase();
-        const filePath = path.join(this.modesPath, file);
-        const content = await fs.readFile(filePath, 'utf-8');
+        // 再帰的にmdファイルを探索
+        await this.loadModesFromDir(modesPath);
+      } catch (error) {
+        console.error(`[mode-controller] Error loading modes from ${modesPath}: ${error}`);
+        // エラーが発生しても他のディレクトリの処理は続行
+        continue;
+      }
+    }
+  }
+
+  private async loadModesFromDir(dirPath: string): Promise<void> {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+
+      if (entry.isDirectory()) {
+        // サブディレクトリを再帰的に探索
+        await this.loadModesFromDir(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        // mdファイルを処理
+        const content = await fs.readFile(fullPath, 'utf-8');
         const parsed = this.parseModeMd(content);
 
-        // メタデータがない場合はデフォルト値を設定
-        if (!parsed.metadata.mode) {
-          parsed.metadata.mode = modeName;
-        }
-        if (!parsed.metadata.displayName) {
-          parsed.metadata.displayName = modeName;
+        // フロントマターがない、またはmodeフィールドがない場合はスキップ
+        if (!parsed.metadata || !parsed.metadata.mode) {
+          console.error(`[mode-controller] Skipping ${fullPath}: no valid mode metadata found`);
+          continue;
         }
 
+        // displayNameがない場合はmodeフィールドを使用
+        if (!parsed.metadata.displayName) {
+          parsed.metadata.displayName = parsed.metadata.mode;
+        }
+
+        const modeName = parsed.metadata.mode.toLowerCase();
         this.availableModes.set(modeName, parsed);
-        console.error(`[mode-controller] Loaded mode: ${modeName}`);
+        console.error(`[mode-controller] Loaded mode: ${modeName} from ${fullPath}`);
       }
-    } catch (error) {
-      console.error(`[mode-controller] Error loading modes: ${error}`);
-      throw error;
     }
   }
 
@@ -66,13 +91,16 @@ class ModeController {
       try {
         const metadata = yaml.load(match[1]) as ModeMetadata;
         const body = match[2];
-        return { metadata, body };
+        // modeフィールドが存在する場合のみ有効なモードとして返す
+        if (metadata && metadata.mode) {
+          return { metadata, body };
+        }
       } catch (e) {
         // YAMLパースエラーの場合はメタデータなしとして扱う
         console.error(`[mode-controller] YAML parse error: ${e}`);
-        return { metadata: {} as ModeMetadata, body: content };
       }
     }
+    // フロントマターがない、またはmodeフィールドがない場合は空のメタデータを返す
     return { metadata: {} as ModeMetadata, body: content };
   }
 
@@ -229,25 +257,35 @@ class ModeController {
 }
 
 // コマンドライン引数の解析
-function parseArgs(): { modesPath: string } {
+function parseArgs(): { modesPaths: string[] } {
   const args = process.argv.slice(2);
-  let modesPath = path.join(process.cwd(), 'prompts/modes');
+  const modesPaths: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--modes-path' && args[i + 1]) {
-      modesPath = path.resolve(args[i + 1]);
+      // カンマ区切りで複数パスを指定可能
+      const paths = args[i + 1].split(',').map(p => path.resolve(p.trim()));
+      modesPaths.push(...paths);
       i++;
     }
   }
 
-  return { modesPath };
+  // デフォルトパスを設定
+  if (modesPaths.length === 0) {
+    modesPaths.push(
+      path.join(process.cwd(), 'prompts/modes'),
+      path.join(process.cwd(), 'products')
+    );
+  }
+
+  return { modesPaths };
 }
 
 async function main() {
-  const { modesPath } = parseArgs();
+  const { modesPaths } = parseArgs();
 
   // モードコントローラーの初期化
-  const modeController = new ModeController(modesPath);
+  const modeController = new ModeController(modesPaths);
   await modeController.initialize();
 
   // MCPサーバーの初期化

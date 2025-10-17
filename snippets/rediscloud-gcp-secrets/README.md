@@ -112,8 +112,6 @@ CHECK_PERIOD="2023-10" ./check_certificate_updates.sh
 | CERTS_DIR | × | 証明書保存先ディレクトリ | ./redis_certificates |
 | CERTIFICATE_LIST | × | 取得する証明書名（カンマ区切り） | スクリプト内定義※1 |
 
-※1 デフォルトリスト: voc_redislabs_user, speak_redislabs_user, miru_redis_client_crt
-
 #### analyze_certificate_groups.sh
 
 | 環境変数 | 必須 | 説明 | デフォルト値 |
@@ -128,8 +126,6 @@ CHECK_PERIOD="2023-10" ./check_certificate_updates.sh
 | EXTRACT_DIR | × | 証明書抽出先ディレクトリ | ./extracted_terraform_certs |
 | TF_CERT_VARS | × | Terraform変数名（カンマ区切り） | スクリプト内定義※2 |
 
-※2 デフォルトリスト: admin_certificate, common_certificate, connect_certificate, 他6種
-
 #### check_certificate_updates.sh
 
 | 環境変数 | 必須 | 説明 | デフォルト値 |
@@ -137,8 +133,6 @@ CHECK_PERIOD="2023-10" ./check_certificate_updates.sh
 | GCP_PROJECT_EVALUATION | ○ | GCPプロジェクトID | なし（第1引数で指定可） |
 | SERVICE_PATTERNS | × | サービス名パターン（カンマ区切り） | スクリプト内定義※3 |
 | CHECK_PERIOD | × | 特定期間の更新確認（例: "2023-10"） | なし |
-
-※3 デフォルトリスト: rewrite, voc, speak, miru, mila, session, evaluation, jobflow, datahub, issues, signals, mirror
 
 ## 証明書の構成
 調査により判明した証明書グループ構成：

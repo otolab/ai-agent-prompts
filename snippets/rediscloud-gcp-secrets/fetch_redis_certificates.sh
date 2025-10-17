@@ -16,9 +16,7 @@ if [ -n "$CERTIFICATE_LIST" ]; then
 else
   # デフォルトリスト（環境変数が設定されていない場合）
   CERTIFICATES=(
-    "voc_redislabs_user"
-    "speak_redislabs_user"
-    "miru_redis_client_crt"
+    "dummy"
     # 必要に応じて追加
   )
 fi

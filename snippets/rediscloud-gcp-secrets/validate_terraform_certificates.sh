@@ -30,17 +30,7 @@ mkdir -p "$EXTRACT_DIR"
 if [ -n "$TF_CERT_VARS" ]; then
   IFS=',' read -ra CERT_VARS <<< "$TF_CERT_VARS"
 else
-  CERT_VARS=(
-    "admin_certificate"
-    "common_certificate"
-    "connect_certificate"
-    "righttouch_voc_certificate"
-    "righttouch_speak_certificate"
-    "miru_certificate"
-    "mila_certificate"
-    "jobflow_certificate"
-    "rewrite_certificate"
-  )
+  CERT_VARS=("dummy")
 fi
 
 echo "証明書を抽出中..."

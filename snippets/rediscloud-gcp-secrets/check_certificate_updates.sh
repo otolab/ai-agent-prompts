@@ -89,20 +89,7 @@ echo ""
 if [ -n "$SERVICE_PATTERNS" ]; then
   IFS=',' read -ra services <<< "$SERVICE_PATTERNS"
 else
-  services=(
-    "rewrite"
-    "voc"
-    "speak"
-    "miru"
-    "mila"
-    "session"
-    "evaluation"
-    "jobflow"
-    "datahub"
-    "issues"
-    "signals"
-    "mirror"
-  )
+  services=("dummy")
 fi
 
 for service in "${services[@]}"; do

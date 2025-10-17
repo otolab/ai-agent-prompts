@@ -49,7 +49,7 @@ Issue番号受信時に自動発動し、作業内容をコメントで体系的
 
 ### 3. 作業準備
 - 現在のブランチの確認
-- 必要なら最新のdefaultブランチを取得して作業ブランチ作成
+- 必要なら最新のデフォルトブランチを取得して作業ブランチ作成
 
 ### 4. 作業実行
 - 特定された作業の実行
@@ -70,7 +70,7 @@ Issue番号受信時に自動発動し、作業内容をコメントで体系的
 ## コメントスタイル
 
 ### メモスタイル（発見・気づきの即座記録）
-- **用途**: 作業中の発見や問題の記録。主にこちらを使う
+- **用途**: 進捗や作業中の発見や問題の記録。主にこちらを使う
 - **形式**: 簡潔、単一内容に集中、ヘッダ行不要
 - **例**:
   ```markdown
@@ -108,92 +108,58 @@ Issue番号受信時に自動発動し、作業内容をコメントで体系的
 **すべてのGitHubコメント（Issue、PR、レビュー）で冒頭に `*🤖 by Claude Code*` を記載**
 
 - Issue番号判明時点で即座に内容確認
-- `gh issue view --comments`, `gh pr view --comments`を活用
 - 明確な関係性記述（depends on, relates to, refs等）
 
-### コミット・PR作業
+### 作業ブランチ
 - ブランチ名: `feature/123/issue-description-1`
   - ブランチ作成は最新のdevelop/main/masterから分岐する
+
+### コミット・PR作業
 - 安全なコミット: 個別ファイル追加、予期しない変更の確認
+  - `git status <dir>`で確認
   - `git add -A` は禁止。`git add .`もなるべく使わない
 - PR説明文: Issue要約を含む自動生成
   - `refs #番号` で作業Issue番号を記載
   - 自動closeは行わない
 
-### PR作成基準
+### PR作成前の確認
 - **原則**: マージ可能な完全な状態でPRを作成
 - **完全性の定義**:
   - 計画した全機能の実装完了
-  - ローカルテストパス
-  - Lint/型チェック通過
-  - CI全項目グリーン
+  - ローカルで可能な全テストパス
+  - 型チェック通過
+  - Lintエラー/警告: 0
 - **レビュー用PR**: ユーザ明示的指示時のみ（WIP/Draft等明記）
 - **詳細チェックリスト**: `TECH_NOTES.md`参照
 
-## 他モードとの連携
-- **コード修正モード**: ファイル編集時の詳細記録
-- **振り返りモード**: 作業後の改善活動
-- **KARTE開発モード**: システム固有のワークフロー
+## 利用可能なスニペット
 
-## 技術的詳細
+### common-github/ ディレクトリ
 
-### 主要コマンド
-- `gh issue view --comments <number>` - Issue詳細取得
-- `gh issue comment <number>` - コメント追加
-- `gh pr list --search="<query>"` - 関連PR検索
+#### 実行可能スクリプト（.sh）
+Issue管理とCI/CD関連の作業を効率化するスクリプト：
 
-### PRレビューコメントの取得と返信
+- **set-issue-relationships.sh** - GitHub Issues間の親子関係を設定
+  - 単一または複数の子Issueに対応
+  - GraphQL APIのsub_issues機能を使用
 
-#### 未解決コメントの取得
-```bash
-# 未解決のみ取得（推奨）
-gh api graphql -f query='{
-  repository(owner: "OWNER", name: "REPO") {
-    pullRequest(number: PR_NUMBER) {
-      reviewThreads(last: 30) {
-        nodes {
-          id
-          path
-          line
-          isResolved
-          comments(last: 1) {
-            nodes {
-              body
-              author { login }
-            }
-          }
-        }
-      }
-    }
-  }
-}' | jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {id, path, comment: .comments.nodes[0].body}'
-```
+- **check-ci-errors.sh** - GitHub PRのCIチェック結果を確認・分析
+  - 失敗したジョブの詳細ログをファイルに保存
+  - 自動PR検出機能付き
 
-#### レビューコメントへの返信
-```bash
-gh api graphql -f query='
-mutation {
-  addPullRequestReviewThreadReply(input: {
-    pullRequestReviewThreadId: "THREAD_ID",
-    body: "*🤖 by Claude Code*\n\n修正済み: [具体的な修正内容]"
-  }) {
-    comment { id }
-  }
-}'
-```
+- **search-code.sh** - GitHubリポジトリのコード検索
+  - 自動ページネーション対応（100件以上の結果取得可能）
+  - 行番号特定機能（--locate-lines）
+  - Organization全体の検索にも対応
 
-#### 返信フォーマット
-**状況別：**
-- **修正完了**: `*🤖 by Claude Code*\n\n修正済み: [内容]`
-- **確認中**: `*🤖 by Claude Code*\n\n確認中: [質問内容]`
-- **保留**: `*🤖 by Claude Code*\n\n別PRで対応: Issue #XX`
+#### APIコード例（common-github/README.md内）
+GitHub APIの活用方法とコード例：
 
-### Git操作の安全性
-詳細は `TECH_NOTES.md` を参照：
-- 編集ファイルの事前明確化
-- 個別ファイル追加（`git add -A` 禁止）
-- 予期しない変更への対処
+- **Issue/PRコメントの直接取得**
+  - コメントURLからコメントIDを抽出して内容を取得
+  - `gh api /repos/owner/repo/issues/comments/{id}` の使用例
 
----
-**作成**: 2025年7月31日  
-**最終更新**: 2025年8月12日（重複削除、重要度による階層化）
+- **PRレビューコメントの取得と返信**
+  - GraphQLで未解決レビューコメントを取得
+  - レビュースレッドへの返信（mutation）
+  - 状況別の返信フォーマット例（修正完了、確認中、別PR対応）

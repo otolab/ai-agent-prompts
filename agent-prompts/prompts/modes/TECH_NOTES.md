@@ -135,18 +135,6 @@ exitMessage: |
 - 依存関係の競合解決は段階的に行う
 - セキュリティ脆弱性の警告に適切に対応する
 
-### npm workspaces環境での実行原則
-- **npm installの実行場所**: 必ずモノレポのルートディレクトリで実行
-  - ルートで実行することでworkspacesの依存関係が正しく解決される
-  - 個別パッケージ内での実行は依存関係グラフの破壊につながる
-- **-wフラグの使用**: 特定ワークスペースへの依存追加時は必須
-  - 例: `npm install express -w packages/api`
-  - これによりルートのpackage-lock.jsonが適切に更新される
-- **二つの依存関係グラフの認識**:
-  - ランタイムグラフ: npm workspacesが管理（package.json）
-  - コンパイルタイムグラフ: TypeScript Project Referencesが管理（tsconfig.json）
-  - この二つの同期が崩れるとビルドキャッシュが機能しなくなる
-
 ### package-lock.jsonのコミット戦略
 - **package-lock.jsonの変更は独立したコミットに分離する**
 - 機能追加・修正とpackage-lock.json更新を同一コミットに含めない

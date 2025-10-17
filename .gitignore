@@ -11,3 +11,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+# Research and report files
+research*.md
+research-report*.md
