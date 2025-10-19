@@ -310,7 +310,7 @@ async function main() {
         modes: z.union([
           z.string(),
           z.array(z.string())
-        ]).describe('開始するモード名（文字列または配列）例: "document_research" または ["document_research", "tech_notes"]'),
+        ]).describe('開始するモード名（文字列または配列）例: "specification_research" または ["specification_research", "tech_notes"]'),
       },
     },
     async (args: any) => {
@@ -340,7 +340,7 @@ async function main() {
         modes: z.union([
           z.string(),
           z.array(z.string())
-        ]).optional().describe('終了するモード名（省略時は全モード終了）例: "document_research" または ["document_research", "tech_notes"]'),
+        ]).optional().describe('終了するモード名（省略時は全モード終了）例: "specification_research" または ["specification_research", "tech_notes"]'),
       },
     },
     async (args: any) => {

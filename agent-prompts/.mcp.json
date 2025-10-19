@@ -2,9 +2,10 @@
   "mcpServers": {
     "mode-controller": {
       "type": "stdio",
-      "command": "node",
+      "command": "npx",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcps/mode-controller/dist/server.js",
+        "-y",
+        "@otolab/mcp-mode-controller",
         "--modes-path",
         "${CLAUDE_PLUGIN_ROOT}/prompts/modes,${CLAUDE_PLUGIN_ROOT}/../products"
       ]

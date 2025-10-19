@@ -1,13 +1,41 @@
 {
-  "name": "@agent-prompts/mode-controller",
-  "version": "1.0.0",
+  "name": "@otolab/mcp-mode-controller",
+  "version": "0.1.0",
   "description": "MCP server for controlling agent operation modes",
   "main": "dist/server.js",
+  "license": "MIT",
+  "author": "otolab",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/otolab/ai-agent-prompts.git",
+    "directory": "agent-prompts/mcps/mode-controller"
+  },
+  "homepage": "https://github.com/otolab/ai-agent-prompts/tree/main/agent-prompts/mcps/mode-controller",
+  "bugs": {
+    "url": "https://github.com/otolab/ai-agent-prompts/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "agent",
+    "mode-controller"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "bin": {
+    "mcp-mode-controller": "dist/server.js"
+  },
   "scripts": {
     "build": "tsc",
+    "postinstall": "npm run build",
     "dev": "tsc --watch",
     "start": "node dist/server.js",
     "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
     "test": "npm run build && vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage"

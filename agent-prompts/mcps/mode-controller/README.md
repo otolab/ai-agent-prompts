@@ -54,8 +54,8 @@ Claude Codeプラグインの `.mcp.json` に以下の設定を追加：
 
 ```markdown
 ---
-mode: document_research
-displayName: ドキュメント調査モード
+mode: specification_research
+displayName: 仕様調査モード
 autoTrigger:
   - 仕様理解が必要な時
   - 作業前調査
@@ -65,7 +65,7 @@ exitMessage: |
   必要に応じて追加調査を検討してください。
 ---
 
-# ドキュメント調査モード
+# 仕様調査モード
 
 ## 目的
 プロジェクトの仕様や実装を深く理解するための調査モード
@@ -98,8 +98,8 @@ exitMessage: |
 }
 
 // 使用例
-mode_enter({ modes: "document_research" })                      // 単一モード
-mode_enter({ modes: ["document_research", "tech_notes"] })      // 複数モード同時開始
+mode_enter({ modes: "specification_research" })                      // 単一モード
+mode_enter({ modes: ["specification_research", "tech_notes"] })      // 複数モード同時開始
 ```
 
 ### mode_exit
@@ -114,8 +114,8 @@ mode_enter({ modes: ["document_research", "tech_notes"] })      // 複数モー�
 
 // 使用例
 mode_exit({})                                          // 全アクティブモードを終了
-mode_exit({ modes: "document_research" })              // 特定のモードを終了
-mode_exit({ modes: ["document_research", "tech_notes"] })  // 複数モードを同時終了
+mode_exit({ modes: "specification_research" })              // 特定のモードを終了
+mode_exit({ modes: ["specification_research", "tech_notes"] })  // 複数モードを同時終了
 ```
 
 ### mode_show
@@ -130,18 +130,18 @@ mode_exit({ modes: ["document_research", "tech_notes"] })  // 複数モードを
 
 // 使用例
 mode_show({})                         // 全アクティブモードの内容を表示
-mode_show({ mode: "document_research" })  // 特定のモードの内容を表示
+mode_show({ mode: "specification_research" })  // 特定のモードの内容を表示
 
 // 出力例（単一モード）
-【ドキュメント調査モード（現在アクティブ）】
+【仕様調査モード（現在アクティブ）】
 
-# ドキュメント調査モード
+# 仕様調査モード
 ...（モード内容）
 
 // 出力例（複数モード）
-【ドキュメント調査モード（現在アクティブ）】
+【仕様調査モード（現在アクティブ）】
 
-# ドキュメント調査モード
+# 仕様調査モード
 ...（モード内容）
 
 ────────────────────────────────────────
@@ -164,13 +164,13 @@ mode_status({})
 📊 モード状態
 
 アクティブなモード (1個):
-  🟢 ドキュメント調査モード (document_research_mode)
+  🟢 仕様調査モード (specification_research)
 
 // 出力例（複数モード）
 📊 モード状態
 
 アクティブなモード (2個):
-  🟢 ドキュメント調査モード (document_research_mode)
+  🟢 仕様調査モード (specification_research)
   🟢 コード修正モード (tech_notes)
 
 // 出力例（モード未設定）
@@ -197,17 +197,17 @@ Mode Controllerは複数のモードを同時にアクティブ化できます�
 
 ```javascript
 // 複数モードを同時に開始
-mode_enter({ modes: ["document_research", "tech_notes"] })
+mode_enter({ modes: ["specification_research", "tech_notes"] })
 
 // 現在のステータスを確認
 mode_status()
 // → アクティブなモード (2個)
 
 // 特定のモードの内容だけを確認
-mode_show({ mode: "document_research" })
+mode_show({ mode: "specification_research" })
 
 // 特定のモードだけを終了
-mode_exit({ modes: "document_research" })
+mode_exit({ modes: "specification_research" })
 
 // 残りのモードも終了
 mode_exit()
