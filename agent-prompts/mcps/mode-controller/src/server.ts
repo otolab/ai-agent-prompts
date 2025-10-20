@@ -13,9 +13,13 @@ interface ModeMetadata {
   exitMessage?: string;
 }
 
-interface ParsedMode {
+interface ParsedModeContent {
   metadata: ModeMetadata;
   body: string;
+}
+
+interface ParsedMode extends ParsedModeContent {
+  filePath: string;
 }
 
 class ModeController {
@@ -79,13 +83,16 @@ class ModeController {
         }
 
         const modeName = parsed.metadata.mode.toLowerCase();
-        this.availableModes.set(modeName, parsed);
+        this.availableModes.set(modeName, {
+          ...parsed,
+          filePath: fullPath
+        });
         console.error(`[mode-controller] Loaded mode: ${modeName} from ${fullPath}`);
       }
     }
   }
 
-  private parseModeMd(content: string): ParsedMode {
+  private parseModeMd(content: string): ParsedModeContent {
     const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
     if (match) {
       try {
@@ -124,7 +131,7 @@ class ModeController {
       this.activeModes.add(normalizedName);
       const displayName = mode.metadata.displayName || modeName;
       entered.push(displayName);
-      results.push(`【${displayName}開始】\n\n${mode.body}`);
+      results.push(`【${displayName}開始】\n\n以下のモード定義に従って動作してください：\n\nファイル: ${mode.filePath}\n\n※このファイルを読み込んで内容を確認してください`);
     }
 
     if (entered.length === 0) {
@@ -212,7 +219,7 @@ class ModeController {
       }
 
       const displayName = mode.metadata.displayName || modeName;
-      return `【${displayName}（現在アクティブ）】\n\n${mode.body}`;
+      return `【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
     }
 
     // 全てのアクティブモードを表示
@@ -221,7 +228,7 @@ class ModeController {
       const mode = this.availableModes.get(activeMode);
       if (mode) {
         const displayName = mode.metadata.displayName || activeMode;
-        results.push(`【${displayName}（現在アクティブ）】\n\n${mode.body}`);
+        results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
       }
     }
 
@@ -270,12 +277,11 @@ function parseArgs(): { modesPaths: string[] } {
     }
   }
 
-  // デフォルトパスを設定
+  // --modes-pathは必須
   if (modesPaths.length === 0) {
-    modesPaths.push(
-      path.join(process.cwd(), 'prompts/modes'),
-      path.join(process.cwd(), 'products')
-    );
+    console.error('[mode-controller] ERROR: --modes-path is required');
+    console.error('[mode-controller] Usage: mcp-mode-controller --modes-path /path/to/modes[,/path/to/modes2,...]');
+    process.exit(1);
   }
 
   return { modesPaths };

@@ -1,7 +1,12 @@
+---
+mode: test_without_meta
+displayName: test_mode_without_metadata
+---
+
 # テストモード（メタデータなし）
 
 ## 目的
-YAMLフロントマターがない場合の処理をテストするためのモード
+最小限のメタデータで動作することをテストするためのモード
 
 ## 内容
 このモードはテスト用です。

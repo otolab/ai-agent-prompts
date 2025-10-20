@@ -16,6 +16,15 @@ Mode Controllerは、AIアシスタントの動作モードをMarkdownファイ�
 
 ## インストール
 
+### npmパッケージから（推奨）
+
+```bash
+# npxで自動インストール＆実行（MCP設定で使用）
+npx -y @otolab/mcp-mode-controller --modes-path /path/to/modes
+```
+
+### ソースからビルド
+
 ```bash
 # 依存関係のインストール
 npm install
@@ -29,6 +38,29 @@ npm run build
 ### MCP設定
 
 Claude Codeプラグインの `.mcp.json` に以下の設定を追加：
+
+#### npxを使用（推奨）
+
+```json
+{
+  "mcpServers": {
+    "mode-controller": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@otolab/mcp-mode-controller",
+        "--modes-path",
+        "${CLAUDE_PLUGIN_ROOT}/prompts/modes,${CLAUDE_PLUGIN_ROOT}/../products"
+      ]
+    }
+  }
+}
+```
+
+**注意**: `--modes-path`は**必須**パラメータです。カンマ区切りで複数のディレクトリを指定できます。
+
+#### ローカルビルドを使用
 
 ```json
 {
@@ -48,7 +80,7 @@ Claude Codeプラグインの `.mcp.json` に以下の設定を追加：
 
 ### モードファイルの作成
 
-モードファイルは指定されたディレクトリ（デフォルト: `./modes`）に配置します。
+モードファイルは`--modes-path`で指定したディレクトリに配置します。サブディレクトリも再帰的に探索されます。
 
 #### YAMLフロントマター付きモード
 
@@ -91,6 +123,8 @@ exitMessage: |
 
 モードを開始します（複数同時指定可能）。
 
+**動作**: モード定義ファイルの読み込み指示を返します。AIアシスタントはこの指示に従ってファイルを読み込み、モード内容を確認します。
+
 ```typescript
 // 引数
 {
@@ -100,7 +134,21 @@ exitMessage: |
 // 使用例
 mode_enter({ modes: "specification_research" })                      // 単一モード
 mode_enter({ modes: ["specification_research", "tech_notes"] })      // 複数モード同時開始
+
+// 出力例
+【仕様調査モード開始】
+
+以下のモード定義に従って動作してください：
+
+ファイル: /path/to/prompts/modes/SPECIFICATION_RESEARCH_MODE.md
+
+※このファイルを読み込んで内容を確認してください
 ```
+
+**利点**:
+- トークン効率: 会話履歴に全文ではなくパス情報のみが残る
+- 確実性: Readツールによる明示的なファイル読み込み
+- 柔軟性: ファイル更新が即座に反映される
 
 ### mode_exit
 
@@ -120,7 +168,9 @@ mode_exit({ modes: ["specification_research", "tech_notes"] })  // 複数モー�
 
 ### mode_show
 
-アクティブなモードの内容を表示します。モードの指示内容を確認したい時に使用します。
+アクティブなモードの内容を表示します。モードの指示内容を確認したい時や、コンテキスト圧縮後にモード内容を再確認する時に使用します。
+
+**動作**: モード定義の全文とファイルパスを返します。
 
 ```typescript
 // 引数
@@ -135,11 +185,15 @@ mode_show({ mode: "specification_research" })  // 特定のモードの内容を
 // 出力例（単一モード）
 【仕様調査モード（現在アクティブ）】
 
+ファイル: /path/to/prompts/modes/SPECIFICATION_RESEARCH_MODE.md
+
 # 仕様調査モード
 ...（モード内容）
 
 // 出力例（複数モード）
 【仕様調査モード（現在アクティブ）】
+
+ファイル: /path/to/prompts/modes/SPECIFICATION_RESEARCH_MODE.md
 
 # 仕様調査モード
 ...（モード内容）
@@ -148,9 +202,16 @@ mode_show({ mode: "specification_research" })  // 特定のモードの内容を
 
 【コード修正モード（現在アクティブ）】
 
+ファイル: /path/to/prompts/modes/CODE_REVIEW_MODE.md
+
 # コード修正モード
 ...（モード内容）
 ```
+
+**用途**:
+- モード内容の再確認
+- コンテキスト圧縮後の復元
+- デバッグ・トラブルシューティング
 
 ### mode_status
 

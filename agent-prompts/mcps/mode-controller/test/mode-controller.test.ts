@@ -42,15 +42,15 @@ describe('Mode Controller MCP Server', () => {
 
       const text = result.content[0].text;
       expect(text).toContain('利用可能な動作モード');
-      expect(text).toContain('test_mode_with_metadata');
-      expect(text).toContain('test_mode_without_metadata');
+      expect(text).toContain('test_with_meta');
+      expect(text).toContain('test_without_meta');
     });
   });
 
   describe('mode_enter', () => {
     it('メタデータ付きモードを開始できる', async () => {
       const response = await tester.callTool('mode_enter', {
-        modes: 'test_mode_with_metadata'
+        modes: 'test_with_meta'
       });
 
       expect(response).toBeDefined();
@@ -58,12 +58,13 @@ describe('Mode Controller MCP Server', () => {
 
       const text = response.result.content[0].text;
       expect(text).toContain('【テストモード（メタデータ付き）開始】');
-      expect(text).toContain('YAMLフロントマターの処理をテスト');
+      expect(text).toContain('以下のモード定義に従って動作してください');
+      expect(text).toContain('※このファイルを読み込んで内容を確認してください');
     });
 
     it('メタデータなしモードを開始できる', async () => {
       const response = await tester.callTool('mode_enter', {
-        modes: 'test_mode_without_metadata'
+        modes: 'test_without_meta'
       });
 
       expect(response).toBeDefined();
@@ -71,12 +72,13 @@ describe('Mode Controller MCP Server', () => {
 
       const text = response.result.content[0].text;
       expect(text).toContain('【test_mode_without_metadata開始】');
-      expect(text).toContain('メタデータがなくても正しく動作');
+      expect(text).toContain('以下のモード定義に従って動作してください');
+      expect(text).toContain('※このファイルを読み込んで内容を確認してください');
     });
 
     it('複数のモードを同時に開始できる', async () => {
       const response = await tester.callTool('mode_enter', {
-        modes: ['test_mode_with_metadata', 'test_mode_without_metadata']
+        modes: ['test_with_meta', 'test_without_meta']
       });
 
       expect(response).toBeDefined();
@@ -117,7 +119,7 @@ describe('Mode Controller MCP Server', () => {
 
     it('単一モード設定時のステータスを確認できる', async () => {
       // モードを開始
-      await tester.callTool('mode_enter', { modes: 'test_mode_with_metadata' });
+      await tester.callTool('mode_enter', { modes: 'test_with_meta' });
 
       const response = await tester.callTool('mode_status', {});
 
@@ -132,7 +134,7 @@ describe('Mode Controller MCP Server', () => {
     it('複数モード設定時のステータスを確認できる', async () => {
       // 複数モードを開始
       await tester.callTool('mode_enter', {
-        modes: ['test_mode_with_metadata', 'test_mode_without_metadata']
+        modes: ['test_with_meta', 'test_without_meta']
       });
 
       const response = await tester.callTool('mode_status', {});
@@ -150,7 +152,7 @@ describe('Mode Controller MCP Server', () => {
   describe('mode_show', () => {
     it('アクティブなモードの内容を再表示できる', async () => {
       // モードを開始
-      await tester.callTool('mode_enter', { modes: 'test_mode_with_metadata' });
+      await tester.callTool('mode_enter', { modes: 'test_with_meta' });
 
       // モードの内容を再表示
       const response = await tester.callTool('mode_show', {});
@@ -160,18 +162,19 @@ describe('Mode Controller MCP Server', () => {
 
       const text = response.result.content[0].text;
       expect(text).toContain('【テストモード（メタデータ付き）（現在アクティブ）】');
+      expect(text).toContain('ファイル:');
       expect(text).toContain('YAMLフロントマターの処理をテスト');
     });
 
     it('特定のモードの内容を表示できる', async () => {
       // 複数モードを開始
       await tester.callTool('mode_enter', {
-        modes: ['test_mode_with_metadata', 'test_mode_without_metadata']
+        modes: ['test_with_meta', 'test_without_meta']
       });
 
       // 特定のモードを指定して表示
       const response = await tester.callTool('mode_show', {
-        mode: 'test_mode_without_metadata'
+        mode: 'test_without_meta'
       });
 
       expect(response).toBeDefined();
@@ -179,6 +182,7 @@ describe('Mode Controller MCP Server', () => {
 
       const text = response.result.content[0].text;
       expect(text).toContain('【test_mode_without_metadata（現在アクティブ）】');
+      expect(text).toContain('ファイル:');
       expect(text).toContain('メタデータがなくても正しく動作');
     });
 
@@ -199,7 +203,7 @@ describe('Mode Controller MCP Server', () => {
   describe('mode_exit', () => {
     it('全アクティブモードを終了できる', async () => {
       // モードを開始
-      await tester.callTool('mode_enter', { modes: 'test_mode_with_metadata' });
+      await tester.callTool('mode_enter', { modes: 'test_with_meta' });
 
       // モードを終了（引数なし）
       const response = await tester.callTool('mode_exit', {});
@@ -214,10 +218,10 @@ describe('Mode Controller MCP Server', () => {
 
     it('特定のモードを指定して終了できる', async () => {
       // モードを開始
-      await tester.callTool('mode_enter', { modes: 'test_mode_with_metadata' });
+      await tester.callTool('mode_enter', { modes: 'test_with_meta' });
 
       // 同じモードを指定して終了
-      const response = await tester.callTool('mode_exit', { modes: 'test_mode_with_metadata' });
+      const response = await tester.callTool('mode_exit', { modes: 'test_with_meta' });
 
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
@@ -229,12 +233,12 @@ describe('Mode Controller MCP Server', () => {
     it('複数モードを同時に終了できる', async () => {
       // 複数モードを開始
       await tester.callTool('mode_enter', {
-        modes: ['test_mode_with_metadata', 'test_mode_without_metadata']
+        modes: ['test_with_meta', 'test_without_meta']
       });
 
       // 複数モードを指定して終了
       const response = await tester.callTool('mode_exit', {
-        modes: ['test_mode_with_metadata', 'test_mode_without_metadata']
+        modes: ['test_with_meta', 'test_without_meta']
       });
 
       expect(response).toBeDefined();
@@ -248,16 +252,16 @@ describe('Mode Controller MCP Server', () => {
 
     it('異なるモードを指定した場合はエラー', async () => {
       // モードを開始
-      await tester.callTool('mode_enter', { modes: 'test_mode_with_metadata' });
+      await tester.callTool('mode_enter', { modes: 'test_with_meta' });
 
       // 異なるモードを指定して終了
-      const response = await tester.callTool('mode_exit', { modes: 'test_mode_without_metadata' });
+      const response = await tester.callTool('mode_exit', { modes: 'test_without_meta' });
 
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
       const text = response.result.content[0].text;
-      expect(text).toContain('モード \'test_mode_without_metadata\' は現在アクティブではありません');
+      expect(text).toContain('モード \'test_without_meta\' は現在アクティブではありません');
     });
 
     it('モード未設定時の終了処理', async () => {
@@ -278,11 +282,11 @@ describe('Mode Controller MCP Server', () => {
   describe('モードの切り替え', () => {
     it('モードを追加できる', async () => {
       // 最初のモードを開始
-      await tester.callTool('mode_enter', { modes: 'test_mode_with_metadata' });
+      await tester.callTool('mode_enter', { modes: 'test_with_meta' });
 
       // 別のモードを追加（両方アクティブになる）
       const response = await tester.callTool('mode_enter', {
-        modes: 'test_mode_without_metadata'
+        modes: 'test_without_meta'
       });
 
       expect(response).toBeDefined();
@@ -295,7 +299,7 @@ describe('Mode Controller MCP Server', () => {
       const statusResponse = await tester.callTool('mode_status', {});
       const statusText = statusResponse.result.content[0].text;
       expect(statusText).toContain('アクティブなモード (2個)');
-      expect(statusText).toContain('test_mode_with_metadata');
+      expect(statusText).toContain('テストモード（メタデータ付き）');
       expect(statusText).toContain('test_mode_without_metadata');
     });
   });
