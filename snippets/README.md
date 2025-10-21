@@ -1,25 +1,19 @@
-# Snippets - 再利用可能なスクリプト・ツール集
+# Snippets - 再利用可能なスクリプト集
 
-様々なプロジェクトで再利用可能な汎用的なスクリプト集です。
+プロジェクト横断で利用可能な汎用スクリプト。詳細は各ディレクトリのREADME.mdを参照。
 
-## 利用可能なスニペット
+## [common-github/](common-github/) - GitHub操作
 
-### [common-github/](common-github/) - GitHub関連の共通スクリプト
-- `set-issue-relationship.sh` - GitHub Issues間の親子関係を設定
-- `set-multiple-issue-relationships.sh` - 一つの親Issueに複数の子Issueを一括設定
-- `check-ci-errors.sh` - GitHub CI/CDのエラーチェックと詳細表示
+- **set-issue-relationships.sh** - Issue親子関係の設定（単一/複数子Issue対応）
+- **search-code.sh** - コード検索（自動ページネーション、行番号特定、100件以上対応）
+- **check-ci-errors.sh** - PR CI状態の確認とエラーログ取得
 
-### [rediscloud-gcp-secrets/](rediscloud-gcp-secrets/) - RedisCloud証明書管理
-- `fetch_redis_certificates.sh` - GCP Secret Managerから証明書を一括取得
-- `analyze_certificate_groups.sh` - 証明書の重複検出とSHA256ハッシュ分析
-- `validate_terraform_certificates.sh` - Terraformファイルの証明書検証
-- `check_certificate_updates.sh` - 証明書の更新履歴とバージョン確認
+## [rediscloud-gcp-secrets/](rediscloud-gcp-secrets/) - RedisCloud証明書管理
 
-## その他
-
-- **[スニペット作成ガイドライン](CONTRIBUTING.md)** - 新規スニペット追加時の規約
-- 各スニペットの詳細は各ディレクトリ内のREADME.mdを参照
+- **fetch_redis_certificates.sh** - GCP Secret Managerから証明書一括取得
+- **analyze_certificate_groups.sh** - 証明書重複検出とSHA256分析
+- **validate_terraform_certificates.sh** - Terraform証明書検証
+- **check_certificate_updates.sh** - 証明書更新履歴確認
 
 ---
-**作成**: 2025年9月26日
-**最終更新**: 2025年10月1日
+詳細・使用例: 各ディレクトリのREADME.md | 新規追加: [CONTRIBUTING.md](CONTRIBUTING.md)
