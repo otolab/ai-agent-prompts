@@ -1,16 +1,5 @@
 {
   "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup|compact",
-        "hooks": [
-          {
-            "type": "callback",
-            "callback": "mcp__coeiro-operator__operator_assign"
-          }
-        ]
-      }
-    ],
     "Notification": [
       {
         "matcher": ".*",
