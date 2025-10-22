@@ -3,6 +3,10 @@
 # PostToolUse hook for Bash tool
 # 1. Adds current working directory to context when cd command is executed
 # 2. Warns about git add -A/. without git status in the same command
+#
+# NOTE: このhookは一時的に無効化されています (2025-10-22)
+# 理由: Bashツール実行時にエラーが発生してツールが異常終了する問題が確認された
+# 問題が解決次第、hooks/hooks.jsonで再度有効化する予定
 
 # Function to output JSON response
 output_json() {
