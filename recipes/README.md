@@ -20,6 +20,7 @@ recipes/
 ├── README.md                    # 本ファイル - 全体概要とインデックス
 ├── document-code-test/          # ドキュメント・コード・テストの三位一体同期管理
 ├── npm-workspaces-typescript/   # npm workspaces x TypeScript設定ガイド
+├── serena-integration/          # Serenaコード解析ツールの導入・設定
 └── testing/                     # テスト戦略・分類・実装指針
 ```
 
@@ -90,10 +91,18 @@ npm workspacesとTypeScript Project References連携ガイド
   - 各テストレベルの責任範囲と実装指針
   - モック使用方針とセットアップパターン
 
+### serena-integration/
+Serenaコード解析・編集ツールの導入と設定
+- **[SERENA_PROJECT_SETUP.md](serena-integration/SERENA_PROJECT_SETUP.md)** - プロジェクトへのSerena導入手順
+  - Claude Codeとの統合設定（自動アクティベート対応）
+  - ブラウザ自動起動の無効化設定
+  - 大規模プロジェクトのインデックス作成
+  - プロジェクト固有の設定とトラブルシューティング
+
 ---
 
 **作成日**: 2025年8月12日
-**最終更新**: 2025年9月19日  
+**最終更新**: 2025年10月22日  
 **管理者**: Claude Code User
 
 **関連ファイル**:
