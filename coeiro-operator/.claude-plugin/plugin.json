@@ -1,0 +1,19 @@
+{
+  "name": "coeiro-operator",
+  "version": "1.3.0",
+  "description": "COEIROINK音声合成MCPサーバー",
+  "author": {
+    "name": "otolab"
+  },
+  "homepage": "https://github.com/otolab/coeiro-operator",
+  "repository": "https://github.com/otolab/coeiro-operator",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "voice",
+    "tts",
+    "coeiroink",
+    "audio"
+  ],
+  "hooks": "./hooks/hooks.json"
+}

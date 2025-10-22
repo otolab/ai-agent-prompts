@@ -16,6 +16,13 @@
       "keywords": ["foundation", "guidelines", "modes", "commands"]
     },
     {
+      "name": "coeiro-operator",
+      "source": "./coeiro-operator",
+      "description": "COEIROINK音声合成MCPサーバー",
+      "version": "1.3.0",
+      "keywords": ["mcp", "voice", "tts", "coeiroink"]
+    },
+    {
       "name": "recipes",
       "source": "./recipes",
       "description": "開発パターンとベストプラクティス集",

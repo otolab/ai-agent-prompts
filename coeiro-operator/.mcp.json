@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "coeiro-operator": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@coeiro-operator/mcp"
+      ]
+    }
+  }
+}
