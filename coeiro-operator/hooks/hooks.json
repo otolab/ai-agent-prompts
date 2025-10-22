@@ -10,6 +10,17 @@
           }
         ]
       }
+    ],
+    "Notification": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "say-coeiroink '入力待ちです'"
+          }
+        ]
+      }
     ]
   }
 }
