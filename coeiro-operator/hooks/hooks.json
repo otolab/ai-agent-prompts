@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y @coeiro-operator/cli say-coeiroink '入力待ちです'"
+            "command": "npx --package @coeiro-operator/cli -y say-coeiroink '入力待ちです'"
           }
         ]
       }
