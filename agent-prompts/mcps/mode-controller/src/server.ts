@@ -202,24 +202,25 @@ class ModeController {
   }
 
   async showCurrentMode(modeName?: string): Promise<string> {
-    if (this.activeModes.size === 0) {
-      return '現在アクティブなモードはありません。';
-    }
-
-    // 特定のモードが指定された場合
+    // 特定のモードが指定された場合：アクティブ状態に関係なく表示
     if (modeName) {
       const normalizedName = modeName.toLowerCase();
-      if (!this.activeModes.has(normalizedName)) {
-        return `モード '${modeName}' は現在アクティブではありません。`;
-      }
-
       const mode = this.availableModes.get(normalizedName);
+
       if (!mode) {
-        return 'モード情報が見つかりません。';
+        return `モード '${modeName}' は利用可能なモードに存在しません。`;
       }
 
       const displayName = mode.metadata.displayName || modeName;
-      return `【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
+      const isActive = this.activeModes.has(normalizedName);
+      const statusLabel = isActive ? '現在アクティブ' : '非アクティブ';
+
+      return `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
+    }
+
+    // モード名が省略された場合：アクティブなモードのみ表示
+    if (this.activeModes.size === 0) {
+      return '現在アクティブなモードはありません。';
     }
 
     // 全てのアクティブモードを表示

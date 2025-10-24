@@ -198,6 +198,35 @@ describe('Mode Controller MCP Server', () => {
       const text = response.result.content[0].text;
       expect(text).toContain('現在アクティブなモードはありません');
     });
+
+    it('非アクティブなモードでも内容を表示できる', async () => {
+      // モードをアクティブにせずに表示を試みる
+      await tester.callTool('mode_exit', {}); // 全モード終了
+
+      const response = await tester.callTool('mode_show', {
+        mode: 'test_with_meta'
+      });
+
+      expect(response).toBeDefined();
+      expect(response.success).toBe(true);
+
+      const text = response.result.content[0].text;
+      expect(text).toContain('【テストモード（メタデータ付き）（非アクティブ）】');
+      expect(text).toContain('ファイル:');
+      expect(text).toContain('YAMLフロントマターの処理をテスト');
+    });
+
+    it('存在しないモードを指定した場合のエラー処理', async () => {
+      const response = await tester.callTool('mode_show', {
+        mode: 'non_existent_mode'
+      });
+
+      expect(response).toBeDefined();
+      expect(response.success).toBe(true);
+
+      const text = response.result.content[0].text;
+      expect(text).toContain('利用可能なモードに存在しません');
+    });
   });
 
   describe('mode_exit', () => {

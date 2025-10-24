@@ -168,9 +168,11 @@ mode_exit({ modes: ["specification_research", "tech_notes"] })  // 複数モー�
 
 ### mode_show
 
-アクティブなモードの内容を表示します。モードの指示内容を確認したい時や、コンテキスト圧縮後にモード内容を再確認する時に使用します。
+モードの内容を表示します。モードの指示内容を確認したい時や、コンテキスト圧縮後にモード内容を再確認する時に使用します。
 
 **動作**: モード定義の全文とファイルパスを返します。
+
+**重要**: モード名が指定された場合、アクティブ状態に関係なくそのモードの内容を表示します。
 
 ```typescript
 // 引数
@@ -180,14 +182,22 @@ mode_exit({ modes: ["specification_research", "tech_notes"] })  // 複数モー�
 
 // 使用例
 mode_show({})                         // 全アクティブモードの内容を表示
-mode_show({ mode: "specification_research" })  // 特定のモードの内容を表示
+mode_show({ mode: "specification_research" })  // 特定のモードの内容を表示（非アクティブでも可）
 
-// 出力例（単一モード）
+// 出力例（アクティブなモード）
 【仕様調査モード（現在アクティブ）】
 
 ファイル: /path/to/prompts/modes/SPECIFICATION_RESEARCH_MODE.md
 
 # 仕様調査モード
+...（モード内容）
+
+// 出力例（非アクティブなモード）
+【技術メモモード（非アクティブ）】
+
+ファイル: /path/to/prompts/modes/TECH_NOTES.md
+
+# 技術メモモード
 ...（モード内容）
 
 // 出力例（複数モード）
