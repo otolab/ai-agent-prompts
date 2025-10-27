@@ -6,6 +6,7 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname $(dirname $(realpath "$0")))}"
 # Base message - using actual line breaks for better readability
 BASE_MESSAGE="作業環境の再構築を最優先で行ってください。完了後に継続作業やユーザからの新しい指示を実行します。\n
 1. ${PLUGIN_ROOT}/prompts/root.mdと指定された関連ファイルを読み込む\n
+   - 環境の再整備のために読み込んだファイルを一覧します\n
 2. アシスタント動作モードを再設定\n
 3. 継続作業について確認しTODOを再構築\n
 4. ユーザのメッセージを確認して実行"
