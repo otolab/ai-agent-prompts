@@ -11,6 +11,7 @@ interface ModeMetadata {
   displayName: string;
   autoTrigger?: string[];
   exitMessage?: string;
+  fullContent?: boolean;  // trueの場合、mode_enterでファイル内容を直接出力
 }
 
 interface ParsedModeContent {
@@ -111,6 +112,61 @@ class ModeController {
     return { metadata: {} as ModeMetadata, body: content };
   }
 
+  /**
+   * @参照を解決してファイル内容を再帰的に読み込む
+   * @param content 元のコンテンツ
+   * @param baseFilePath 元のファイルのパス（相対パス解決用）
+   * @param visitedFiles 循環参照検出用
+   */
+  private async resolveReferences(
+    content: string,
+    baseFilePath: string,
+    visitedFiles: Set<string> = new Set()
+  ): Promise<string> {
+    // @で始まる行を検出（例: @principles.md, @../../snippets/README.md）
+    const refPattern = /^@(.+)$/gm;
+    const matches = Array.from(content.matchAll(refPattern));
+
+    if (matches.length === 0) {
+      return content;
+    }
+
+    const baseDir = path.dirname(baseFilePath);
+    const sections: string[] = [content];
+
+    for (const match of matches) {
+      const refPath = match[1].trim();
+      const absolutePath = path.resolve(baseDir, refPath);
+
+      // 循環参照チェック
+      if (visitedFiles.has(absolutePath)) {
+        console.error(`[mode-controller] Circular reference detected: ${absolutePath}`);
+        continue;
+      }
+
+      try {
+        // ファイルを読み込み
+        const refContent = await fs.readFile(absolutePath, 'utf-8');
+        const fileName = path.basename(absolutePath);
+
+        // 訪問済みとしてマーク
+        const newVisited = new Set(visitedFiles);
+        newVisited.add(absolutePath);
+
+        // 再帰的に参照を解決
+        const resolvedContent = await this.resolveReferences(refContent, absolutePath, newVisited);
+
+        // セクションとして追加
+        sections.push(`\n${'='.repeat(60)}\n=== ${fileName} ===\n${'='.repeat(60)}\n\n${resolvedContent}`);
+      } catch (error) {
+        console.error(`[mode-controller] Failed to read referenced file: ${absolutePath}`, error);
+        sections.push(`\n⚠️ 参照ファイルの読み込みに失敗: ${refPath}`);
+      }
+    }
+
+    return sections.join('\n');
+  }
+
   async enterMode(modeNames: string | string[]): Promise<string> {
     // 配列に正規化
     const modes = Array.isArray(modeNames) ? modeNames : [modeNames];
@@ -131,7 +187,15 @@ class ModeController {
       this.activeModes.add(normalizedName);
       const displayName = mode.metadata.displayName || modeName;
       entered.push(displayName);
-      results.push(`【${displayName}開始】\n\n以下のモード定義に従って動作してください：\n\nファイル: ${mode.filePath}\n\n※このファイルを読み込んで内容を確認してください`);
+
+      // fullContent: trueの場合は直接コンテンツを出力
+      if (mode.metadata.fullContent) {
+        const content = await this.resolveReferences(mode.body, mode.filePath);
+        results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\n=== ${path.basename(mode.filePath)} ===\n${'='.repeat(60)}\n\n${content}`);
+      } else {
+        // 従来通りファイル読み込みを指示
+        results.push(`【${displayName}開始】\n\n以下のモード定義に従って動作してください：\n\nファイル: ${mode.filePath}\n\n※このファイルを読み込んで内容を確認してください`);
+      }
     }
 
     if (entered.length === 0) {

@@ -332,4 +332,52 @@ describe('Mode Controller MCP Server', () => {
       expect(statusText).toContain('test_mode_without_metadata');
     });
   });
+
+  describe('fullContent機能', () => {
+    it('fullContent: trueの場合、mode_enterでファイル内容を直接出力', async () => {
+      // fullContent: trueのモードを開始
+      const response = await tester.callTool('mode_enter', { modes: 'test_env_setup' });
+
+      expect(response).toBeDefined();
+      expect(response.success).toBe(true);
+
+      const text = response.result.content[0].text;
+      // モード開始メッセージ
+      expect(text).toContain('【テスト環境セットアップモード開始】');
+      // ファイル内容が直接出力されている
+      expect(text).toContain('このモードはfullContent機能と@参照解決機能のテスト用です');
+      // ファイル読み込み指示ではない
+      expect(text).not.toContain('※このファイルを読み込んで内容を確認してください');
+    });
+
+    it('@参照が解決されて参照ファイルの内容も出力される', async () => {
+      // fullContent: trueのモードを開始（@参照を含む）
+      const response = await tester.callTool('mode_enter', { modes: 'test_env_setup' });
+
+      expect(response).toBeDefined();
+      expect(response.success).toBe(true);
+
+      const text = response.result.content[0].text;
+      // 元のファイル内容
+      expect(text).toContain('このモードはfullContent機能と@参照解決機能のテスト用です');
+      // 参照ファイルのセクション区切り
+      expect(text).toContain('=== test_ref_file.md ===');
+      // 参照ファイルの内容
+      expect(text).toContain('この内容は@参照によって読み込まれます');
+    });
+
+    it('fullContent: falseまたは未指定の場合、従来通りファイル読み込み指示を出力', async () => {
+      // fullContent未指定のモードを開始
+      const response = await tester.callTool('mode_enter', { modes: 'test_with_meta' });
+
+      expect(response).toBeDefined();
+      expect(response.success).toBe(true);
+
+      const text = response.result.content[0].text;
+      // ファイル読み込み指示
+      expect(text).toContain('※このファイルを読み込んで内容を確認してください');
+      // ファイル内容は出力されない
+      expect(text).not.toContain('YAMLフロントマターの処理をテスト');
+    });
+  });
 });
