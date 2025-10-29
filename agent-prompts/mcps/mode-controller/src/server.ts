@@ -123,8 +123,10 @@ class ModeController {
     baseFilePath: string,
     visitedFiles: Set<string> = new Set()
   ): Promise<string> {
-    // @で始まる行を検出（例: @principles.md, @../../snippets/README.md）
-    const refPattern = /^@(.+)$/gm;
+    // @で始まる行を検出（インデントやリスト記号も許容）
+    // @の後は空白以外の文字（ファイルパス）のみを抽出
+    // 例: @principles.md, - @principles.md,   - @../../snippets/README.md
+    const refPattern = /^\s*-?\s*@(\S+)/gm;
     const matches = Array.from(content.matchAll(refPattern));
 
     if (matches.length === 0) {
@@ -147,7 +149,6 @@ class ModeController {
       try {
         // ファイルを読み込み
         const refContent = await fs.readFile(absolutePath, 'utf-8');
-        const fileName = path.basename(absolutePath);
 
         // 訪問済みとしてマーク
         const newVisited = new Set(visitedFiles);
@@ -156,8 +157,8 @@ class ModeController {
         // 再帰的に参照を解決
         const resolvedContent = await this.resolveReferences(refContent, absolutePath, newVisited);
 
-        // セクションとして追加
-        sections.push(`\n${'='.repeat(60)}\n=== ${fileName} ===\n${'='.repeat(60)}\n\n${resolvedContent}`);
+        // セクションとして追加（フルパスを表示）
+        sections.push(`\n${'='.repeat(60)}\nファイル: ${absolutePath}\n${'='.repeat(60)}\n\n${resolvedContent}`);
       } catch (error) {
         console.error(`[mode-controller] Failed to read referenced file: ${absolutePath}`, error);
         sections.push(`\n⚠️ 参照ファイルの読み込みに失敗: ${refPath}`);
@@ -191,7 +192,7 @@ class ModeController {
       // fullContent: trueの場合は直接コンテンツを出力
       if (mode.metadata.fullContent) {
         const content = await this.resolveReferences(mode.body, mode.filePath);
-        results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\n=== ${path.basename(mode.filePath)} ===\n${'='.repeat(60)}\n\n${content}`);
+        results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
       } else {
         // 従来通りファイル読み込みを指示
         results.push(`【${displayName}開始】\n\n以下のモード定義に従って動作してください：\n\nファイル: ${mode.filePath}\n\n※このファイルを読み込んで内容を確認してください`);

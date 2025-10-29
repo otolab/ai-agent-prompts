@@ -360,8 +360,9 @@ describe('Mode Controller MCP Server', () => {
       const text = response.result.content[0].text;
       // 元のファイル内容
       expect(text).toContain('このモードはfullContent機能と@参照解決機能のテスト用です');
-      // 参照ファイルのセクション区切り
-      expect(text).toContain('=== test_ref_file.md ===');
+      // 参照ファイルのセクション区切り（フルパス表示）
+      expect(text).toContain('ファイル:');
+      expect(text).toContain('test_ref_file.md');
       // 参照ファイルの内容
       expect(text).toContain('この内容は@参照によって読み込まれます');
     });
@@ -378,6 +379,48 @@ describe('Mode Controller MCP Server', () => {
       expect(text).toContain('※このファイルを読み込んで内容を確認してください');
       // ファイル内容は出力されない
       expect(text).not.toContain('YAMLフロントマターの処理をテスト');
+    });
+
+    it('ENV_SETUP_MODEの実際の出力を確認（デバッグ用）', async () => {
+      // ENV_SETUP_MODEを開始
+      const response = await tester.callTool('mode_enter', { modes: 'test_real_env_setup' });
+
+      expect(response).toBeDefined();
+      expect(response.success).toBe(true);
+
+      // 実際の出力を表示
+      const text = response.result.content[0].text;
+      console.log('\n========================================');
+      console.log('ENV_SETUP_MODE 実際の出力');
+      console.log('========================================');
+      console.log(text);
+      console.log('========================================\n');
+    });
+
+    it('様々な@参照パターンが検出される', async () => {
+      // 参照パターンテストモードを開始
+      const response = await tester.callTool('mode_enter', { modes: 'test_ref_patterns' });
+
+      expect(response).toBeDefined();
+      expect(response.success).toBe(true);
+
+      const text = response.result.content[0].text;
+
+      // 元のファイル内容
+      expect(text).toContain('様々な@参照パターンのテスト用です');
+
+      // 参照ファイルのセクション区切りが表示される（フルパス）
+      expect(text).toContain('ファイル:');
+      expect(text).toContain('test_ref_file.md');
+
+      // 参照ファイルの内容が読み込まれている
+      expect(text).toContain('この内容は@参照によって読み込まれます');
+
+      console.log('\n========================================');
+      console.log('参照パターンテスト 出力');
+      console.log('========================================');
+      console.log(text);
+      console.log('========================================\n');
     });
   });
 });
