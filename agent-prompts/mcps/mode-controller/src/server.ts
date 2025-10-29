@@ -123,10 +123,10 @@ class ModeController {
     baseFilePath: string,
     visitedFiles: Set<string> = new Set()
   ): Promise<string> {
-    // @で始まる行を検出（インデントやリスト記号も許容）
-    // @の後は空白以外の文字（ファイルパス）のみを抽出
-    // 例: @principles.md, - @principles.md,   - @../../snippets/README.md
-    const refPattern = /^\s*-?\s*@(\S+)/gm;
+    // @参照を検出（行頭、行の途中どちらも対応）
+    // 行頭の@: @principles.md, - @principles.md
+    // 行の途中の@: **: @principles.md, 説明文 @../../snippets/README.md
+    const refPattern = /(?:^|\s|:)\s*@(\S+)/gm;
     const matches = Array.from(content.matchAll(refPattern));
 
     if (matches.length === 0) {

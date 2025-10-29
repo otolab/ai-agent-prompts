@@ -124,11 +124,16 @@ exitMessage: 環境セットアップが完了しました。
 
 セッション開始時・コンテキスト圧縮後の環境再構築を行うモードです。
 
-@principles.md
-@work_guidelines.md
-@../../snippets/README.md
+## 関連ファイル
 
-（@で始まる行は参照ファイルとして自動的に読み込まれ、結合されます）
+**作業原則**: @principles.md
+**作業ガイドライン**: @work_guidelines.md
+**スニペット集**: @../../snippets/README.md
+
+（@参照は以下の形式をサポート）
+- 行頭: @file.md
+- リスト項目: - @file.md
+- 行の途中: **: @file.md
 ```
 
 #### シンプルなモード（メタデータなし）
