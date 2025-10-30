@@ -396,6 +396,38 @@ package-import-method=copy
 prefer-frozen-lockfile=true
 ```
 
+## Vitest設定に関する注意事項
+
+### import.meta.resolve()の使用について
+
+Vitestで`import.meta.resolve()`を使用する場合、バージョン要件があります。
+
+**はい、バージョンによって解決されています。**
+
+以前のバージョンでは`import.meta.resolve()`はサポートされていませんでしたが、**Vitest 1.0以降**（より正確には、基盤となる**Vite 5.0**以降）では、Node.jsのバージョンが適切であれば**利用可能**です。
+
+現在（2025年10月）の最新版の**Vitest v2.x**と**Vite v7.x**をお使いであれば、`import.meta.resolve()`は期待通り動作します。
+
+#### 状況の経緯
+
+1. **以前の状況 (Vite 4 / Vitest 0.x):**
+   `import.meta.resolve()`はNode.jsの比較的新しい（v18.19+ / v20.6+で安定化）機能です。Vitestが内部で使用する`vite-node`が、この機能に完全には対応していませんでした。そのため、`import.meta.resolve is not a function`といったエラーが発生していました。
+
+2. **現在の状況 (Vite 5+ / Vitest 1.0以降):**
+   - Vite 5.0（およびVitest 1.0）へのメジャーアップデートに伴い、**Node.js v18.18.0以上が必須**となりました。
+   - このアップデートと`vite-node`の改善により、Node.jsがネイティブでサポートする`import.meta.resolve()`がVitestの実行環境でも正しく動作するようになりました。
+
+#### 必須要件
+
+Vitestで`import.meta.resolve()`を使用するには、以下の2つの条件を満たす必要があります：
+
+1. **Vitestのバージョン:** **v1.0.0** 以上（2025年10月時点の最新: **v2.x**）
+2. **Node.jsのバージョン:** **v18.19.0** または **v20.6.0** 以上（`import.meta.resolve`が安定化されたバージョン）
+
+これらの最新の環境であれば、`import.meta.resolve()`は期待通り動作します。
+
+もし現在古いバージョンをお使いの場合は、VitestおよびNode.jsのアップデートをご検討ください。
+
 ## まとめ
 
 pnpm workspacesとTypeScript Project Referencesの連携において重要なポイント：
