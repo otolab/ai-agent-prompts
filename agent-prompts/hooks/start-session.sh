@@ -4,7 +4,7 @@
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname $(dirname $(realpath "$0")))}"
 
 # Base message - using actual line breaks for better readability
-MESSAGE="最優先で **mode_enter(env_setup)** を実行し指示に従ってください。\n"
+MESSAGE="継続作業を一旦停止。最優先で **mode_enter(env_setup)** を実行し指示に従ってください。これは作業内容に関係なく実行する必要があります。\n"
 
 if [ -d ".serena" ]; then
     MESSAGE="${MESSAGE}完了後に、Serenaのアクティベートを行ってください\n"
