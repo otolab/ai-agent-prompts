@@ -280,6 +280,12 @@ class ModeController {
       const isActive = this.activeModes.has(normalizedName);
       const statusLabel = isActive ? '現在アクティブ' : '非アクティブ';
 
+      // fullContent: trueの場合は@参照を解決して表示
+      if (mode.metadata.fullContent) {
+        const content = await this.resolveReferences(mode.body, mode.filePath);
+        return `【${displayName}（${statusLabel}）】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`;
+      }
+
       return `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
     }
 
@@ -294,7 +300,14 @@ class ModeController {
       const mode = this.availableModes.get(activeMode);
       if (mode) {
         const displayName = mode.metadata.displayName || activeMode;
-        results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
+
+        // fullContent: trueの場合は@参照を解決して表示
+        if (mode.metadata.fullContent) {
+          const content = await this.resolveReferences(mode.body, mode.filePath);
+          results.push(`【${displayName}（現在アクティブ）】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
+        } else {
+          results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
+        }
       }
     }
 
