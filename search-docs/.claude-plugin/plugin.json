@@ -1,0 +1,18 @@
+{
+  "name": "search-docs",
+  "version": "1.0.14",
+  "description": "search-docs MCPサーバー - ドキュメント検索・取得",
+  "author": {
+    "name": "otolab"
+  },
+  "homepage": "https://www.npmjs.com/package/@search-docs/mcp-server",
+  "repository": "https://github.com/otolab/search-docs",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "search",
+    "vector-search",
+    "documentation",
+    "markdown"
+  ]
+}

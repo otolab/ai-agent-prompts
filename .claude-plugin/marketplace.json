@@ -35,6 +35,13 @@
       "description": "再利用可能なスクリプト・ツール集",
       "version": "1.0.0",
       "keywords": ["scripts", "tools", "utilities"]
+    },
+    {
+      "name": "search-docs",
+      "source": "./search-docs",
+      "description": "search-docs MCPサーバー - ドキュメント検索・取得",
+      "version": "1.0.14",
+      "keywords": ["mcp", "search", "vector-search", "documentation", "markdown"]
     }
   ]
 }

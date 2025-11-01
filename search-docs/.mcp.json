@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "search-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@search-docs/mcp-server"
+      ]
+    }
+  }
+}
