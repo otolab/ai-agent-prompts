@@ -1,13 +1,10 @@
 #!/bin/bash
 
-# プラグインルートディレクトリを取得（環境変数があれば使用、なければ相対パスから計算）
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(dirname $(dirname $(realpath "$0")))}"
-
 # Base message - using actual line breaks for better readability
-MESSAGE="継続作業を一旦停止。最優先で **mode_enter(env_setup)** を実行し指示に従ってください。これは作業内容に関係なく実行する必要があります。\n"
+MESSAGE="新しいセッションが始まりました。TODOやユーザ指示を実行する前に **mode_list()** を実行して下さい"
 
 if [ -d ".serena" ]; then
-    MESSAGE="${MESSAGE}完了後に、Serenaのアクティベートを行ってください\n"
+    MESSAGE="${MESSAGE}\n完了後に、Serenaのアクティベートを行ってください\n"
 fi
 
 # Use jq to properly encode JSON with multi-line strings

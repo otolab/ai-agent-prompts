@@ -195,7 +195,7 @@ class ModeController {
         results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
       } else {
         // 従来通りファイル読み込みを指示
-        results.push(`【${displayName}開始】\n\n以下のモード定義に従って動作してください：\n\nファイル: ${mode.filePath}\n\n※このファイルを読み込んで内容を確認してください`);
+        results.push(`【${displayName}開始】\n\n次のファイル読み込んで従ってください（サマリが存在する場合でも原文を読み直します）：\nファイル: ${mode.filePath}`);
       }
     }
 
@@ -204,10 +204,9 @@ class ModeController {
     }
 
     // 複数モードの場合は区切り線を入れる
-    if (results.length > 1) {
-      return results.join('\n\n' + '─'.repeat(40) + '\n\n');
-    }
-    return results[0];
+    let result = results.length > 1 ? results.join('\n\n' + '─'.repeat(40) + '\n\n') : results[0];
+    result += '\n\n' + this.formatActiveModesStatus();
+    return result;
   }
 
   async exitMode(modeNames?: string | string[]): Promise<string> {
@@ -226,10 +225,9 @@ class ModeController {
       }
       this.activeModes.clear();
 
-      if (results.length > 1) {
-        return results.join('\n\n' + '─'.repeat(40) + '\n\n');
-      }
-      return results[0];
+      let result = results.length > 1 ? results.join('\n\n' + '─'.repeat(40) + '\n\n') : results[0];
+      result += '\n\n' + this.formatActiveModesStatus();
+      return result;
     }
 
     // 配列に正規化
@@ -260,10 +258,62 @@ class ModeController {
       return `指定されたモードはアクティブではありません: ${modes.join(', ')}`;
     }
 
-    if (results.length > 1) {
-      return results.join('\n\n' + '─'.repeat(40) + '\n\n');
+    let result = results.length > 1 ? results.join('\n\n' + '─'.repeat(40) + '\n\n') : results[0];
+    result += '\n\n' + this.formatActiveModesStatus();
+    return result;
+  }
+
+  async setModes(modeNames: string | string[]): Promise<string> {
+    // 配列に正規化
+    const modes = Array.isArray(modeNames) ? modeNames : [modeNames];
+
+    // 現在のアクティブモードをクリア
+    this.activeModes.clear();
+
+    // 指定されたモードを設定
+    const set: string[] = [];
+    const notFound: string[] = [];
+
+    for (const modeName of modes) {
+      const normalizedName = modeName.toLowerCase();
+      const mode = this.availableModes.get(normalizedName);
+
+      if (!mode) {
+        notFound.push(modeName);
+        continue;
+      }
+
+      this.activeModes.add(normalizedName);
+      set.push(mode.metadata.displayName || modeName);
     }
-    return results[0];
+
+    // 結果メッセージ
+    let result = '🔄 モード状態を復元しました\n\n';
+
+    if (set.length > 0) {
+      result += `アクティブなモード (${set.length}個):\n`;
+      for (const displayName of set) {
+        result += `  🟢 ${displayName}\n`;
+      }
+    } else {
+      result += 'アクティブなモード: なし\n';
+    }
+
+    if (notFound.length > 0) {
+      result += `\n⚠️ 見つからなかったモード: ${notFound.join(', ')}`;
+    }
+
+    return result;
+  }
+
+  private formatActiveModesStatus(): string {
+    const activeModes = this.getActiveModes();
+    if (activeModes.length === 0) {
+      return '現在のアクティブモード: なし';
+    }
+
+    const modeNames = activeModes.map(m => m.displayName).join(', ');
+    return `現在のアクティブモード (${activeModes.length}個): ${modeNames}`;
   }
 
   async showCurrentMode(modeName?: string): Promise<string> {
@@ -464,7 +514,6 @@ async function main() {
         }
       } else {
         statusText += `現在のモード: なし\n`;
-        statusText += `状態: ⭕ 待機中`;
       }
 
       return {
@@ -535,6 +584,36 @@ async function main() {
         };
       } catch (error) {
         throw new Error(`モード表示エラー: ${(error as Error).message}`);
+      }
+    }
+  );
+
+  // mode_set ツール
+  server.registerTool(
+    'mode_set',
+    {
+      description: 'モード状態を直接設定します（復元専用、ファイル読み込みなし）。現在のアクティブモードを全てクリアし、指定されたモードのみをアクティブにします',
+      inputSchema: {
+        modes: z.union([
+          z.string(),
+          z.array(z.string())
+        ]).describe('設定するモード名（文字列または配列）例: "foundation" または ["foundation", "issue_tracking"]'),
+      },
+    },
+    async (args: any) => {
+      const { modes } = args;
+      try {
+        const result = await modeController.setModes(modes);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: result,
+            },
+          ],
+        };
+      } catch (error) {
+        throw new Error(`モード設定エラー: ${(error as Error).message}`);
       }
     }
   );
