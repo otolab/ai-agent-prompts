@@ -3,7 +3,6 @@ mode: reflection
 displayName: 振り返りモード
 exitMessage: |
   振り返りモードを終了しました。
-  知見の抽出と改善活動が完了しました。
 ---
 
 # 対話振り返り・改善活動指示書

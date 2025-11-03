@@ -6,7 +6,6 @@ autoTrigger:
   - ユーザとの対話で作業Issueが明確になった時
 exitMessage: |
   Issue追跡モードを終了しました。
-  作業内容はIssueコメントに記録されています。
 ---
 
 # Issue追跡モード
