@@ -17,14 +17,14 @@ process.stdin.on('end', () => {
 
     // sourceに応じたメッセージを構築
     const lines = [
-      '═══════════════════════════════════════════',
-      '⚠️ **Execute these steps before any TODO or user tasks**',
-      ''
+      '═══════════════════════════════════════════'
     ];
 
     switch (source) {
       case 'startup':
         lines.push([
+          '⚠️ **To start work in the correct context, execute these steps:**',
+          '',
           '* **mode_list()** を実行します',
           '* 適切なモードを有効にします',
         ].join('\n'));
@@ -32,6 +32,9 @@ process.stdin.on('end', () => {
 
       case 'resume':
         lines.push([
+          '⚠️ **To continue work in the correct context, execute these steps:**',
+          '⚠️ **継続作業を正しいコンテキストの中で実行するために、次の手順を実行してください：**',
+          '',
           '1. コンテキストから最新のアクティブなモードリストを検索',
           '2. **mode_set()** ツールでモードの状態を保存（MCPオンメモリに保存）',
         ].join('\n'));
@@ -39,12 +42,18 @@ process.stdin.on('end', () => {
 
       case 'clear':
         lines.push([
+          '⚠️ **To continue work in the correct context, execute these steps:**',
+          '',
           '* **mode_show()** を実行してモード文書を再読み込みします',
         ].join('\n'));
         break;
 
       case 'compact':
         lines.push([
+          '⚠️ **To continue work in the correct context, execute these steps:**',
+          '⚠️ **継続作業を正しいコンテキストの中で実行するために、次の手順を実行してください：**',
+          '',
+          '* Execute **mode_show()** to restore the mode state',
           '* **mode_show()** で状態を復元してください',
         ].join('\n'));
         break;
