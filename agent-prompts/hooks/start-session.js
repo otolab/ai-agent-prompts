@@ -23,38 +23,48 @@ process.stdin.on('end', () => {
     switch (source) {
       case 'startup':
         lines.push([
-          '⚠️ **To start work in the correct context, execute these steps:**',
+          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
           '',
-          '* **mode_list()** を実行します',
-          '* 適切なモードを有効にします',
+          '[ ] Execute **mode_list()**',
+          '[ ] Enable appropriate modes',
+          '',
+          '**Do not start other work until these steps are completed.**',
         ].join('\n'));
         break;
 
       case 'resume':
         lines.push([
-          '⚠️ **To continue work in the correct context, execute these steps:**',
-          '⚠️ **継続作業を正しいコンテキストの中で実行するために、次の手順を実行してください：**',
+          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
+          '⚠️ **必須手順 - 他の作業より優先して完了してください：**',
           '',
-          '1. コンテキストから最新のアクティブなモードリストを検索',
-          '2. **mode_set()** ツールでモードの状態を保存（MCPオンメモリに保存）',
+          '[ ] 1. Search context for the latest active mode list',
+          '[ ] 2. Execute **mode_set()** to restore modes to MCP memory',
+          '',
+          '**Do not start other work until these steps are completed.**',
+          '**これらが完了するまで、他の作業を開始しないでください。**',
         ].join('\n'));
         break;
 
       case 'clear':
         lines.push([
-          '⚠️ **To continue work in the correct context, execute these steps:**',
+          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
           '',
-          '* **mode_show()** を実行してモード文書を再読み込みします',
+          '[ ] Execute **mode_show()** to reload mode documents',
+          '',
+          '**Do not start other work until this step is completed.**',
         ].join('\n'));
         break;
 
       case 'compact':
         lines.push([
-          '⚠️ **To continue work in the correct context, execute these steps:**',
-          '⚠️ **継続作業を正しいコンテキストの中で実行するために、次の手順を実行してください：**',
+          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
+          '⚠️ **必須手順 - 他の作業より優先して完了してください：**',
           '',
-          '* Execute **mode_show()** to restore the mode state',
-          '* **mode_show()** で状態を復元してください',
+          '[ ] Execute **mode_show()** to restore the mode state',
+          '[ ] **mode_show()** で状態を復元してください',
+          '',
+          '**Do not start other work until this step is completed.**',
+          '**これが完了するまで、他の作業を開始しないでください。**',
         ].join('\n'));
         break;
 
