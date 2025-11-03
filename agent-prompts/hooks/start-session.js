@@ -17,7 +17,9 @@ process.stdin.on('end', () => {
 
     // sourceに応じたメッセージを構築
     const lines = [
-      '次の指示を、TODOやユーザ指示を実行する前に行ってください'
+      '═══════════════════════════════════════════',
+      '⚠️ **Execute these steps before any TODO or user tasks**',
+      ''
     ];
 
     switch (source) {
@@ -43,7 +45,7 @@ process.stdin.on('end', () => {
 
       case 'compact':
         lines.push([
-          '* **mode_show()** で状態を復元してください'
+          '* **mode_show()** で状態を復元してください',
         ].join('\n'));
         break;
 
@@ -57,6 +59,8 @@ process.stdin.on('end', () => {
     if (fs.existsSync(serenaPath) && fs.statSync(serenaPath).isDirectory()) {
       lines.push('* Serenaのアクティベートを行ってください');
     }
+
+    lines.push('═══════════════════════════════════════════');
 
     // JSON出力
     const output = {
