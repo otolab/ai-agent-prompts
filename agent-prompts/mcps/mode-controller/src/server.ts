@@ -195,7 +195,7 @@ class ModeController {
         results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
       } else {
         // 従来通りファイル読み込みを指示
-        results.push(`【${displayName}開始】\n\n次のファイル読み込んで従ってください。\nこれは正しく作業を続ける上で必須の前提作業です。\nサマリが存在する場合でも原文を読み直します。\n\nファイル: ${mode.filePath}`);
+        results.push(`【${displayName}開始】\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、以下のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながる可能性があります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`);
       }
     }
 
@@ -342,7 +342,7 @@ class ModeController {
         return `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
       } else {
         // ファイル読み込み指示モード
-        return `【${displayName}（${statusLabel}）】\n\n次のファイル読み込んで従ってください。\nこれは正しく作業を続ける上で必須の前提作業です。\nサマリが存在する場合でも原文を読み直します。\n\nファイル: ${mode.filePath}`;
+        return `【${displayName}（${statusLabel}）】\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、以下のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながる可能性があります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`;
       }
     }
 
@@ -369,7 +369,7 @@ class ModeController {
             results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
           } else {
             // ファイル読み込み指示モード
-            results.push(`【${displayName}（現在アクティブ）】\n\n次のファイル読み込んで従ってください。\nこれは正しく作業を続ける上で必須の前提作業です。\nサマリが存在する場合でも原文を読み直します。\n\nファイル: ${mode.filePath}`);
+            results.push(`【${displayName}（現在アクティブ）】\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、以下のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながる可能性があります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`);
           }
         }
       }
