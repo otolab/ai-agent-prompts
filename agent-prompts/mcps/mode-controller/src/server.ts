@@ -562,6 +562,8 @@ async function main() {
 
       if (modes.length === 0) {
         listText += '利用可能なモードがありません。';
+      } else {
+        listText += '\n現在の状況や作業内容に応じて、発動条件に合うモードを有効化してください。';
       }
 
       return {
