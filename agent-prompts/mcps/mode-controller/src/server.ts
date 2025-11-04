@@ -316,7 +316,7 @@ class ModeController {
     return `現在のアクティブモード (${activeModes.length}個): ${modeNames}`;
   }
 
-  async showCurrentMode(modeName?: string): Promise<string> {
+  async showCurrentMode(modeName?: string, directRead: boolean = false): Promise<string> {
     // 特定のモードが指定された場合：アクティブ状態に関係なく表示
     if (modeName) {
       const normalizedName = modeName.toLowerCase();
@@ -336,7 +336,14 @@ class ModeController {
         return `【${displayName}（${statusLabel}）】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`;
       }
 
-      return `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
+      // fullContent: falseの場合
+      if (directRead) {
+        // 直接読み込みモード：内容を直接表示
+        return `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
+      } else {
+        // ファイル読み込み指示モード
+        return `【${displayName}（${statusLabel}）】\n\n次のファイル読み込んで従ってください。\nこれは正しく作業を続ける上で必須の前提作業です。\nサマリが存在する場合でも原文を読み直します。\n\nファイル: ${mode.filePath}`;
+      }
     }
 
     // モード名が省略された場合：アクティブなモードのみ表示
@@ -356,7 +363,14 @@ class ModeController {
           const content = await this.resolveReferences(mode.body, mode.filePath);
           results.push(`【${displayName}（現在アクティブ）】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
         } else {
-          results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
+          // fullContent: falseの場合
+          if (directRead) {
+            // 直接読み込みモード：内容を直接表示
+            results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
+          } else {
+            // ファイル読み込み指示モード
+            results.push(`【${displayName}（現在アクティブ）】\n\n次のファイル読み込んで従ってください。\nこれは正しく作業を続ける上で必須の前提作業です。\nサマリが存在する場合でも原文を読み直します。\n\nファイル: ${mode.filePath}`);
+          }
         }
       }
     }
@@ -568,12 +582,13 @@ async function main() {
       description: 'アクティブなモードの内容を表示します',
       inputSchema: {
         mode: z.string().optional().describe('表示するモード名（省略時は全アクティブモード）'),
+        directRead: z.boolean().optional().describe('直接読み込みモード。trueの場合は内容を直接表示、falseの場合はファイル読み込み指示を表示（デフォルト: false）'),
       },
     },
     async (args: any) => {
-      const { mode } = args;
+      const { mode, directRead = false } = args;
       try {
-        const result = await modeController.showCurrentMode(mode);
+        const result = await modeController.showCurrentMode(mode, directRead);
         return {
           content: [
             {
