@@ -195,7 +195,7 @@ class ModeController {
         results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
       } else {
         // 従来通りファイル読み込みを指示
-        results.push(`【${displayName}開始】\n\n次のファイル読み込んで従ってください（サマリが存在する場合でも原文を読み直します）：\nファイル: ${mode.filePath}`);
+        results.push(`【${displayName}開始】\n\n次のファイル読み込んで従ってください。\nこれは正しく作業を続ける上で必須の前提作業です。\nサマリが存在する場合でも原文を読み直します。\n\nファイル: ${mode.filePath}`);
       }
     }
 
