@@ -342,7 +342,9 @@ class ModeController {
         return `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
       } else {
         // ファイル読み込み指示モード
-        return `【${displayName}（${statusLabel}）】\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、以下のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`;
+        const fileInfo = `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}`;
+        const warning = `\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、上記のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}`;
+        return fileInfo + warning;
       }
     }
 
@@ -353,6 +355,8 @@ class ModeController {
 
     // 全てのアクティブモードを表示
     const results: string[] = [];
+    let hasFileReadingInstruction = false;
+
     for (const activeMode of this.activeModes) {
       const mode = this.availableModes.get(activeMode);
       if (mode) {
@@ -369,16 +373,21 @@ class ModeController {
             results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
           } else {
             // ファイル読み込み指示モード
-            results.push(`【${displayName}（現在アクティブ）】\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、以下のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`);
+            results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}`);
+            hasFileReadingInstruction = true;
           }
         }
       }
     }
 
-    if (results.length > 1) {
-      return results.join('\n\n' + '─'.repeat(40) + '\n\n');
+    let result = results.length > 1 ? results.join('\n\n' + '─'.repeat(40) + '\n\n') : results[0];
+
+    // ファイル読み込み指示が必要な場合は、最後に警告を追加
+    if (hasFileReadingInstruction) {
+      result += `\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、上記のファイルを必ず読み込んでください\n\nこれらのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}`;
     }
-    return results[0];
+
+    return result;
   }
 
   getActiveModes(): Array<{ mode: string; displayName: string }> {
