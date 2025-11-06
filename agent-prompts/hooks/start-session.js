@@ -23,53 +23,69 @@ process.stdin.on('end', () => {
     switch (source) {
       case 'startup':
         lines.push([
-          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
+          '📋 **Session Setup - 新規セッション開始**',
           '',
-          '[ ] Execute **mode_list()**',
-          '[ ] Enable appropriate modes',
+          '作業環境をセットアップします。',
+          'TodoWriteツールで以下のタスクをリストの最初に追加してください：',
           '',
-          '**Do not start other work until these steps are completed.**',
+          '1. mode_list()を実行して利用可能なモードを確認する',
+          '2. 適切なモードを有効化する',
+          '',
+          'これらは作業開始前の準備ステップです。',
         ].join('\n'));
         break;
 
       case 'resume':
         lines.push([
-          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
-          '⚠️ **必須手順 - 他の作業より優先して完了してください：**',
+          '📋 **Session Setup - セッション再開**',
           '',
-          '[ ] 1. Search context for the latest active mode list',
-          '[ ] 2. Execute **mode_set()** to restore modes to MCP memory',
+          '中断していたセッションを再開します。',
+          'TodoWriteツールで以下のタスクをリストの最初に追加してください：',
           '',
-          '**Do not start other work until these steps are completed.**',
-          '**これらが完了するまで、他の作業を開始しないでください。**',
+          '1. コンテキストから最新のアクティブモードリストを検索する',
+          '2. mode_set()を実行してモードをMCPメモリに復元する',
+          '',
+          'これらは作業再開前の準備ステップです。',
         ].join('\n'));
         break;
 
       case 'clear':
         lines.push([
-          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
+          '📋 **Session Setup - モードクリア後**',
           '',
-          '[ ] Execute **mode_show()** to reload mode documents',
+          'アシスタント動作モードがクリアされました。',
+          'TodoWriteツールで以下のタスクをリストの最初に追加してください：',
           '',
-          '**Do not start other work until this step is completed.**',
+          '1. mode_show()を実行してモードドキュメントを再読み込みする',
+          '',
+          'これは作業継続前の準備ステップです。',
         ].join('\n'));
         break;
 
       case 'compact':
         lines.push([
-          '⚠️ **REQUIRED STEPS - Complete before proceeding:**',
-          '⚠️ **必須手順 - 他の作業より優先して完了してください：**',
+          '📋 **Session Setup - コンテキスト圧縮後の再開**',
           '',
-          '[ ] Execute **mode_show()** to restore the mode state',
-          '[ ] **mode_show()** で状態を復元してください',
+          'コンテキストが圧縮されました。モード状態を復元します。',
+          'TodoWriteツールで以下のタスクをリストの最初に追加してください：',
           '',
-          '**Do not start other work until this step is completed.**',
-          '**これが完了するまで、他の作業を開始しないでください。**',
+          '1. mode_show()を実行してモード状態を復元する',
+          '',
+          'これは作業継続前の準備ステップです。',
+          '',
+          '💡 ヒント: mode_show()は「サマリが存在する場合でも原文を読み直す」指示を含んでいます。',
         ].join('\n'));
         break;
 
       default:
-        lines.push(`セッションが開始されました (source: ${source})。**mode_list()** を実行します。`);
+        lines.push([
+          '📋 **Session Setup**',
+          '',
+          `セッションが開始されました (source: ${source})。`,
+          'TodoWriteツールで以下のタスクをリストの最初に追加してください：',
+          '',
+          '1. mode_list()を実行する',
+        ].join('\n'));
         break;
     }
 

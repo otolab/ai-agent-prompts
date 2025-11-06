@@ -195,7 +195,7 @@ class ModeController {
         results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
       } else {
         // 従来通りファイル読み込みを指示
-        results.push(`【${displayName}開始】\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、以下のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`);
+        results.push(`【${displayName}開始】\n\n${'━'.repeat(60)}\n⚠️ TodoWriteツールで以下のファイルの読み込みを最優先としてスケジュールしてください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`);
       }
     }
 
