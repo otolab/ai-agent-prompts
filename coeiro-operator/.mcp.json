@@ -5,7 +5,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "@coeiro-operator/mcp"
+        "--package",
+        "@coeiro-operator/mcp",
+        "coeiro-operator"
       ]
     }
   }
