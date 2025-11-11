@@ -7,8 +7,8 @@
 #   ./set-issue-relationships.sh <repo> <parent-issue-number> <child-issue-number1> [child-issue-number2 ...]
 #
 # 例:
-#   単一の子Issue: ./set-issue-relationships.sh plaidev/karte-io-systems 130482 134277
-#   複数の子Issue: ./set-issue-relationships.sh plaidev/karte-io-systems 130482 134277 134278 134279
+#   単一の子Issue: ./set-issue-relationships.sh owner/repo 130482 134277
+#   複数の子Issue: ./set-issue-relationships.sh owner/repo 130482 134277 134278 134279
 
 set -e
 

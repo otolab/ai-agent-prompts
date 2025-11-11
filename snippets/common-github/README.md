@@ -16,10 +16,10 @@ GitHub Issues間の親子関係を設定するスクリプトです。単一ま�
 #### 例
 ```bash
 # 単一の子Issue
-./set-issue-relationships.sh plaidev/karte-io-systems 130482 134277
+./set-issue-relationships.sh owner/repo 130482 134277
 
 # 複数の子Issue
-./set-issue-relationships.sh plaidev/karte-io-systems 130482 134277 134278 134279
+./set-issue-relationships.sh owner/repo 130482 134277 134278 134279
 ```
 
 #### 必要な権限
@@ -33,7 +33,7 @@ GitHub Issues間の親子関係を設定するスクリプトです。単一ま�
 
 #### 出力例
 ```
-Repository: plaidev/karte-io-systems
+Repository: owner/repo
 Parent Issue: #130482
 Child Issues: #134277 #134278
 
