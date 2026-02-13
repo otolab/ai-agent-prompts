@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import * as fs from 'fs/promises';
@@ -114,18 +114,15 @@ class ModeController {
 
   /**
    * @参照を解決してファイル内容を再帰的に読み込む
-   * @param content 元のコンテンツ
-   * @param baseFilePath 元のファイルのパス（相対パス解決用）
-   * @param visitedFiles 循環参照検出用
+   * - 参照元の@テキストをmdの内部リンクに置き換え
+   * - 同じファイルへの参照は1回だけ展開（重複排除）
+   * - 展開内容は---で分割して末尾に追加
    */
   private async resolveReferences(
     content: string,
     baseFilePath: string,
     visitedFiles: Set<string> = new Set()
   ): Promise<string> {
-    // @参照を検出（行頭、行の途中どちらも対応）
-    // 行頭の@: @principles.md, - @principles.md
-    // 行の途中の@: **: @principles.md, 説明文 @../../snippets/README.md
     const refPattern = /(?:^|\s|:)\s*@(\S+)/gm;
     const matches = Array.from(content.matchAll(refPattern));
 
@@ -134,38 +131,63 @@ class ModeController {
     }
 
     const baseDir = path.dirname(baseFilePath);
-    const sections: string[] = [content];
+
+    // 1. ユニークな参照を解決
+    const resolved = new Map<string, { resolvedContent: string; title: string }>();
 
     for (const match of matches) {
       const refPath = match[1].trim();
       const absolutePath = path.resolve(baseDir, refPath);
 
-      // 循環参照チェック
+      if (resolved.has(absolutePath)) continue;
+
       if (visitedFiles.has(absolutePath)) {
         console.error(`[mode-controller] Circular reference detected: ${absolutePath}`);
         continue;
       }
 
       try {
-        // ファイルを読み込み
         const refContent = await fs.readFile(absolutePath, 'utf-8');
-
-        // 訪問済みとしてマーク
         const newVisited = new Set(visitedFiles);
         newVisited.add(absolutePath);
-
-        // 再帰的に参照を解決
         const resolvedContent = await this.resolveReferences(refContent, absolutePath, newVisited);
 
-        // セクションとして追加（フルパスを表示）
-        sections.push(`\n${'='.repeat(60)}\nファイル: ${absolutePath}\n${'='.repeat(60)}\n\n${resolvedContent}`);
+        // 最初の見出しをタイトルとして抽出
+        const titleMatch = resolvedContent.match(/^#\s+(.+)$/m);
+        const title = titleMatch ? titleMatch[1].trim() : path.basename(refPath, '.md');
+
+        resolved.set(absolutePath, { resolvedContent, title });
       } catch (error) {
         console.error(`[mode-controller] Failed to read referenced file: ${absolutePath}`, error);
-        sections.push(`\n⚠️ 参照ファイルの読み込みに失敗: ${refPath}`);
       }
     }
 
+    // 2. @参照テキストをmd内部リンクに置き換え
+    let result = content;
+    for (const match of matches) {
+      const refPath = match[1].trim();
+      const absolutePath = path.resolve(baseDir, refPath);
+      const ref = resolved.get(absolutePath);
+      if (ref) {
+        const anchor = this.toAnchor(ref.title);
+        result = result.split(`@${refPath}`).join(`[${ref.title}](#${anchor})`);
+      }
+    }
+
+    // 3. 解決済み内容を---で分割して末尾に追加（重複なし）
+    const sections: string[] = [result];
+    for (const [, ref] of resolved) {
+      sections.push(`\n---\n\n${ref.resolvedContent}`);
+    }
+
     return sections.join('\n');
+  }
+
+  private toAnchor(title: string): string {
+    return title
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff-]/g, '');
   }
 
   async enterMode(modeNames: string | string[]): Promise<string> {
@@ -192,7 +214,7 @@ class ModeController {
       // fullContent: trueの場合は直接コンテンツを出力
       if (mode.metadata.fullContent) {
         const content = await this.resolveReferences(mode.body, mode.filePath);
-        results.push(`【${displayName}開始】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
+        results.push(`【${displayName}開始】\n\n${content}`);
       } else {
         // 従来通りファイル読み込みを指示
         results.push(`【${displayName}開始】\n\n${'━'.repeat(60)}\n⚠️ TodoWriteツールで以下のファイルの読み込みを最優先としてスケジュールしてください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`);
@@ -316,79 +338,6 @@ class ModeController {
     return `現在のアクティブモード (${activeModes.length}個): ${modeNames}`;
   }
 
-  async showCurrentMode(modeName?: string, directRead: boolean = false): Promise<string> {
-    // 特定のモードが指定された場合：アクティブ状態に関係なく表示
-    if (modeName) {
-      const normalizedName = modeName.toLowerCase();
-      const mode = this.availableModes.get(normalizedName);
-
-      if (!mode) {
-        return `モード '${modeName}' は利用可能なモードに存在しません。`;
-      }
-
-      const displayName = mode.metadata.displayName || modeName;
-      const isActive = this.activeModes.has(normalizedName);
-      const statusLabel = isActive ? '現在アクティブ' : '非アクティブ';
-
-      // fullContent: trueの場合は@参照を解決して表示
-      if (mode.metadata.fullContent) {
-        const content = await this.resolveReferences(mode.body, mode.filePath);
-        return `【${displayName}（${statusLabel}）】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`;
-      }
-
-      // fullContent: falseの場合
-      if (directRead) {
-        // 直接読み込みモード：内容を直接表示
-        return `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`;
-      } else {
-        // ファイル読み込み指示モード
-        const fileInfo = `【${displayName}（${statusLabel}）】\n\nファイル: ${mode.filePath}`;
-        const warning = `\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、上記のファイルを必ず読み込んでください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}`;
-        return fileInfo + warning;
-      }
-    }
-
-    // モード名が省略された場合：アクティブなモードのみ表示
-    if (this.activeModes.size === 0) {
-      return '現在アクティブなモードはありません。';
-    }
-
-    // 全てのアクティブモードを表示
-    const results: string[] = [];
-    let hasFileReadingInstruction = false;
-
-    for (const activeMode of this.activeModes) {
-      const mode = this.availableModes.get(activeMode);
-      if (mode) {
-        const displayName = mode.metadata.displayName || activeMode;
-
-        // fullContent: trueの場合は@参照を解決して表示
-        if (mode.metadata.fullContent) {
-          const content = await this.resolveReferences(mode.body, mode.filePath);
-          results.push(`【${displayName}（現在アクティブ）】\n\n${'='.repeat(60)}\nファイル: ${mode.filePath}\n${'='.repeat(60)}\n\n${content}`);
-        } else {
-          // fullContent: falseの場合
-          if (directRead) {
-            // 直接読み込みモード：内容を直接表示
-            results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}\n\n${mode.body}`);
-          } else {
-            // ファイル読み込み指示モード
-            results.push(`【${displayName}（現在アクティブ）】\n\nファイル: ${mode.filePath}`);
-            hasFileReadingInstruction = true;
-          }
-        }
-      }
-    }
-
-    let result = results.length > 1 ? results.join('\n\n' + '─'.repeat(40) + '\n\n') : results[0];
-
-    // ファイル読み込み指示が必要な場合は、最後に警告を追加
-    if (hasFileReadingInstruction) {
-      result += `\n\n${'━'.repeat(60)}\n⚠️ 作業を開始する前に、上記のファイルを必ず読み込んでください\n\nこれらのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nReadツールでファイルの原文を読み込んでから作業を開始してください。\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}`;
-    }
-
-    return result;
-  }
 
   getActiveModes(): Array<{ mode: string; displayName: string }> {
     const modes: Array<{ mode: string; displayName: string }> = [];
@@ -412,6 +361,13 @@ class ModeController {
 
   private getAvailableModeNames(): string[] {
     return Array.from(this.availableModes.keys());
+  }
+
+  async getModeContent(modeName: string): Promise<string | null> {
+    const normalizedName = modeName.toLowerCase();
+    const mode = this.availableModes.get(normalizedName);
+    if (!mode) return null;
+    return await this.resolveReferences(mode.body, mode.filePath);
   }
 }
 
@@ -455,6 +411,7 @@ async function main() {
     {
       capabilities: {
         tools: {},
+        resources: {},
       },
     }
   );
@@ -463,7 +420,7 @@ async function main() {
   server.registerTool(
     'mode_enter',
     {
-      description: '指定した動作モードを開始します（複数指定可能）。使用前に必ずmode_listで利用可能なモードを確認してください',
+      description: '指定した動作モードを開始します（複数指定可能）。利用可能なモードはリソース mode://available で確認できます',
       inputSchema: {
         modes: z.union([
           z.string(),
@@ -550,69 +507,7 @@ async function main() {
     }
   );
 
-  // mode_list ツール
-  server.registerTool(
-    'mode_list',
-    {
-      description: '利用可能な動作モード一覧を表示します',
-      inputSchema: {},
-    },
-    async () => {
-      const modes = modeController.getAvailableModes();
 
-      let listText = '📋 利用可能な動作モード\n\n';
-
-      for (const mode of modes) {
-        listText += `• ${mode.displayName} (${mode.name})\n`;
-        if (mode.triggers && mode.triggers.length > 0) {
-          listText += `  発動条件: ${mode.triggers.join(', ')}\n`;
-        }
-      }
-
-      if (modes.length === 0) {
-        listText += '利用可能なモードがありません。';
-      } else {
-        listText += '\n現在の状況や作業内容に応じて、発動条件に合うモードを有効化してください。';
-      }
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: listText,
-          },
-        ],
-      };
-    }
-  );
-
-  // mode_show ツール
-  server.registerTool(
-    'mode_show',
-    {
-      description: 'アクティブなモードの内容を表示します',
-      inputSchema: {
-        mode: z.string().optional().describe('表示するモード名（省略時は全アクティブモード）'),
-        directRead: z.boolean().optional().describe('直接読み込みモード。trueの場合は内容を直接表示、falseの場合はファイル読み込み指示を表示（デフォルト: false）'),
-      },
-    },
-    async (args: any) => {
-      const { mode, directRead = false } = args;
-      try {
-        const result = await modeController.showCurrentMode(mode, directRead);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: result,
-            },
-          ],
-        };
-      } catch (error) {
-        throw new Error(`モード表示エラー: ${(error as Error).message}`);
-      }
-    }
-  );
 
   // mode_set ツール
   server.registerTool(
@@ -641,6 +536,75 @@ async function main() {
       } catch (error) {
         throw new Error(`モード設定エラー: ${(error as Error).message}`);
       }
+    }
+  );
+
+  // Resource: mode://available — 利用可能モード一覧
+  server.registerResource(
+    'available-modes',
+    'mode://available',
+    {
+      title: '利用可能な動作モード一覧',
+      description: '利用可能な全モードの名前・表示名・発動条件の一覧',
+      mimeType: 'application/json',
+    },
+    async (uri) => {
+      const modes = modeController.getAvailableModes();
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            text: JSON.stringify(modes, null, 2),
+            mimeType: 'application/json',
+          },
+        ],
+      };
+    }
+  );
+
+  // Resource: mode://mode/{modeName} — 個別モードの内容
+  server.registerResource(
+    'mode-content',
+    new ResourceTemplate('mode://mode/{modeName}', {
+      list: async () => {
+        const modes = modeController.getAvailableModes();
+        return {
+          resources: modes.map((mode) => ({
+            uri: `mode://mode/${mode.name}`,
+            name: mode.displayName,
+            description: `モード: ${mode.displayName}`,
+            mimeType: 'text/markdown',
+          })),
+        };
+      },
+      complete: {
+        modeName: async (value: string) => {
+          const modes = modeController.getAvailableModes();
+          return modes
+            .map((m) => m.name)
+            .filter((name) => name.toLowerCase().startsWith(value.toLowerCase()));
+        },
+      },
+    }),
+    {
+      title: 'モード内容',
+      description: '指定したモードの詳細内容（@参照解決済み）',
+      mimeType: 'text/markdown',
+    },
+    async (uri, { modeName }) => {
+      const content = await modeController.getModeContent(modeName as string);
+      if (content === null) {
+        throw new Error(`モード '${modeName}' が見つかりません`);
+      }
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            text: content,
+            mimeType: 'text/markdown',
+          },
+        ],
+      };
     }
   );
 

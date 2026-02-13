@@ -28,25 +28,6 @@ describe('Mode Controller MCP Server', () => {
     }
   });
 
-  describe('mode_list', () => {
-    it('利用可能なモード一覧を取得できる', async () => {
-      const response = await tester.callTool('mode_list', {});
-
-      expect(response).toBeDefined();
-      expect(response.success).toBe(true);
-
-      const result = response.result;
-      expect(result).toBeDefined();
-      expect(result.content).toBeInstanceOf(Array);
-      expect(result.content[0].type).toBe('text');
-
-      const text = result.content[0].text;
-      expect(text).toContain('利用可能な動作モード');
-      expect(text).toContain('test_with_meta');
-      expect(text).toContain('test_without_meta');
-    });
-  });
-
   describe('mode_enter', () => {
     it('メタデータ付きモードを開始できる', async () => {
       const response = await tester.callTool('mode_enter', {
@@ -56,10 +37,9 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('【テストモード（メタデータ付き）開始】');
-      expect(text).toContain('以下のモード定義に従って動作してください');
-      expect(text).toContain('※このファイルを読み込んで内容を確認してください');
+      expect(text).toContain('ファイル:');
     });
 
     it('メタデータなしモードを開始できる', async () => {
@@ -70,10 +50,9 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('【test_mode_without_metadata開始】');
-      expect(text).toContain('以下のモード定義に従って動作してください');
-      expect(text).toContain('※このファイルを読み込んで内容を確認してください');
+      expect(text).toContain('ファイル:');
     });
 
     it('複数のモードを同時に開始できる', async () => {
@@ -84,7 +63,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('【テストモード（メタデータ付き）開始】');
       expect(text).toContain('【test_mode_without_metadata開始】');
       expect(text).toContain('────────────────────────────────────────'); // 区切り線
@@ -95,9 +74,9 @@ describe('Mode Controller MCP Server', () => {
 
       expect(response).toBeDefined();
       expect(response.success).toBe(true); // エラーでもsuccessはtrue
-      expect(response.result.isError).toBe(true);
+      expect((response.result as any).isError).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('モード \'non_existent\' が見つかりません');
     });
   });
@@ -112,9 +91,8 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('現在のモード: なし');
-      expect(text).toContain('待機中');
     });
 
     it('単一モード設定時のステータスを確認できる', async () => {
@@ -126,7 +104,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('アクティブなモード (1個)');
       expect(text).toContain('テストモード（メタデータ付き）');
     });
@@ -142,90 +120,10 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('アクティブなモード (2個)');
       expect(text).toContain('テストモード（メタデータ付き）');
       expect(text).toContain('test_mode_without_metadata');
-    });
-  });
-
-  describe('mode_show', () => {
-    it('アクティブなモードの内容を再表示できる', async () => {
-      // モードを開始
-      await tester.callTool('mode_enter', { modes: 'test_with_meta' });
-
-      // モードの内容を再表示
-      const response = await tester.callTool('mode_show', {});
-
-      expect(response).toBeDefined();
-      expect(response.success).toBe(true);
-
-      const text = response.result.content[0].text;
-      expect(text).toContain('【テストモード（メタデータ付き）（現在アクティブ）】');
-      expect(text).toContain('ファイル:');
-      expect(text).toContain('YAMLフロントマターの処理をテスト');
-    });
-
-    it('特定のモードの内容を表示できる', async () => {
-      // 複数モードを開始
-      await tester.callTool('mode_enter', {
-        modes: ['test_with_meta', 'test_without_meta']
-      });
-
-      // 特定のモードを指定して表示
-      const response = await tester.callTool('mode_show', {
-        mode: 'test_without_meta'
-      });
-
-      expect(response).toBeDefined();
-      expect(response.success).toBe(true);
-
-      const text = response.result.content[0].text;
-      expect(text).toContain('【test_mode_without_metadata（現在アクティブ）】');
-      expect(text).toContain('ファイル:');
-      expect(text).toContain('メタデータがなくても正しく動作');
-    });
-
-    it('モード未設定時の表示処理', async () => {
-      // モードを終了してから表示を試みる
-      await tester.callTool('mode_exit', {});
-
-      const response = await tester.callTool('mode_show', {});
-
-      expect(response).toBeDefined();
-      expect(response.success).toBe(true);
-
-      const text = response.result.content[0].text;
-      expect(text).toContain('現在アクティブなモードはありません');
-    });
-
-    it('非アクティブなモードでも内容を表示できる', async () => {
-      // モードをアクティブにせずに表示を試みる
-      await tester.callTool('mode_exit', {}); // 全モード終了
-
-      const response = await tester.callTool('mode_show', {
-        mode: 'test_with_meta'
-      });
-
-      expect(response).toBeDefined();
-      expect(response.success).toBe(true);
-
-      const text = response.result.content[0].text;
-      expect(text).toContain('【テストモード（メタデータ付き）（非アクティブ）】');
-      expect(text).toContain('ファイル:');
-      expect(text).toContain('YAMLフロントマターの処理をテスト');
-    });
-
-    it('存在しないモードを指定した場合のエラー処理', async () => {
-      const response = await tester.callTool('mode_show', {
-        mode: 'non_existent_mode'
-      });
-
-      expect(response).toBeDefined();
-      expect(response.success).toBe(true);
-
-      const text = response.result.content[0].text;
-      expect(text).toContain('利用可能なモードに存在しません');
     });
   });
 
@@ -240,7 +138,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('【テストモード（メタデータ付き）終了】');
       expect(text).toContain('メタデータが正しく処理されました');
     });
@@ -255,7 +153,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('【テストモード（メタデータ付き）終了】');
     });
 
@@ -273,7 +171,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('【テストモード（メタデータ付き）終了】');
       expect(text).toContain('【test_mode_without_metadata終了】');
       expect(text).toContain('────────────────────────────────────────'); // 区切り線
@@ -289,7 +187,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('モード \'test_without_meta\' は現在アクティブではありません');
     });
 
@@ -303,7 +201,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('現在アクティブなモードはありません');
     });
   });
@@ -321,12 +219,12 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       expect(text).toContain('【test_mode_without_metadata開始】');
 
       // ステータス確認（両方のモードがアクティブ）
       const statusResponse = await tester.callTool('mode_status', {});
-      const statusText = statusResponse.result.content[0].text;
+      const statusText = (statusResponse.result as any).content[0].text;
       expect(statusText).toContain('アクティブなモード (2個)');
       expect(statusText).toContain('テストモード（メタデータ付き）');
       expect(statusText).toContain('test_mode_without_metadata');
@@ -341,13 +239,13 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       // モード開始メッセージ
       expect(text).toContain('【テスト環境セットアップモード開始】');
       // ファイル内容が直接出力されている
       expect(text).toContain('このモードはfullContent機能と@参照解決機能のテスト用です');
       // ファイル読み込み指示ではない
-      expect(text).not.toContain('※このファイルを読み込んで内容を確認してください');
+      expect(text).not.toContain('TodoWriteツールで以下のファイルの読み込みを最優先');
     });
 
     it('@参照が解決されて参照ファイルの内容も出力される', async () => {
@@ -357,13 +255,10 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       // 元のファイル内容
       expect(text).toContain('このモードはfullContent機能と@参照解決機能のテスト用です');
-      // 参照ファイルのセクション区切り（フルパス表示）
-      expect(text).toContain('ファイル:');
-      expect(text).toContain('test_ref_file.md');
-      // 参照ファイルの内容
+      // 参照ファイルの内容（---で分割されている）
       expect(text).toContain('この内容は@参照によって読み込まれます');
     });
 
@@ -374,9 +269,9 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       // ファイル読み込み指示
-      expect(text).toContain('※このファイルを読み込んで内容を確認してください');
+      expect(text).toContain('TodoWriteツールで以下のファイルの読み込みを最優先');
       // ファイル内容は出力されない
       expect(text).not.toContain('YAMLフロントマターの処理をテスト');
     });
@@ -389,7 +284,7 @@ describe('Mode Controller MCP Server', () => {
       expect(response.success).toBe(true);
 
       // 実際の出力を表示
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
       console.log('\n========================================');
       console.log('ENV_SETUP_MODE 実際の出力');
       console.log('========================================');
@@ -404,16 +299,12 @@ describe('Mode Controller MCP Server', () => {
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
 
-      const text = response.result.content[0].text;
+      const text = (response.result as any).content[0].text;
 
       // 元のファイル内容
       expect(text).toContain('様々な@参照パターンのテスト用です');
 
-      // 参照ファイルのセクション区切りが表示される（フルパス）
-      expect(text).toContain('ファイル:');
-      expect(text).toContain('test_ref_file.md');
-
-      // 参照ファイルの内容が読み込まれている
+      // 参照ファイルの内容が読み込まれている（---で分割）
       expect(text).toContain('この内容は@参照によって読み込まれます');
 
       console.log('\n========================================');
@@ -421,6 +312,72 @@ describe('Mode Controller MCP Server', () => {
       console.log('========================================');
       console.log(text);
       console.log('========================================\n');
+    });
+  });
+
+  describe('resources', () => {
+    it('resources/listでリソース一覧を取得できる', async () => {
+      const response = await tester.sendRequest('resources/list', {}) as any;
+
+      expect(response).toBeDefined();
+
+      const resources = response.resources;
+      expect(resources).toBeInstanceOf(Array);
+      expect(resources.length).toBeGreaterThan(0);
+
+      // mode://available が含まれる
+      const availableResource = resources.find((r: any) => r.uri === 'mode://available');
+      expect(availableResource).toBeDefined();
+
+      // 動的リソースのリスト（各モード）
+      const modeResources = resources.filter((r: any) => r.uri.startsWith('mode://mode/'));
+      expect(modeResources.length).toBeGreaterThan(0);
+    });
+
+    it('mode://availableで利用可能モード一覧をJSON取得できる', async () => {
+      const response = await tester.sendRequest('resources/read', { uri: 'mode://available' }) as any;
+
+      expect(response).toBeDefined();
+
+      const contents = response.contents;
+      expect(contents).toBeInstanceOf(Array);
+      expect(contents[0].uri).toBe('mode://available');
+
+      const modes = JSON.parse(contents[0].text);
+      expect(modes).toBeInstanceOf(Array);
+      expect(modes.length).toBeGreaterThan(0);
+
+      // 各モードにname, displayNameがある
+      const mode = modes[0];
+      expect(mode).toHaveProperty('name');
+      expect(mode).toHaveProperty('displayName');
+    });
+
+    it('mode://mode/{modeName}でモード内容を取得できる', async () => {
+      const response = await tester.sendRequest('resources/read', { uri: 'mode://mode/test_with_meta' }) as any;
+
+      expect(response).toBeDefined();
+
+      const contents = response.contents;
+      expect(contents).toBeInstanceOf(Array);
+      expect(contents[0].uri).toBe('mode://mode/test_with_meta');
+      expect(contents[0].text).toContain('YAMLフロントマターの処理をテスト');
+    });
+
+    it('fullContentモードの@参照が解決される', async () => {
+      const response = await tester.sendRequest('resources/read', { uri: 'mode://mode/test_env_setup' }) as any;
+
+      expect(response).toBeDefined();
+
+      const text = response.contents[0].text;
+      // @参照が解決されている
+      expect(text).toContain('この内容は@参照によって読み込まれます');
+    });
+
+    it('存在しないモードでエラーが返る', async () => {
+      await expect(
+        tester.sendRequest('resources/read', { uri: 'mode://mode/non_existent' })
+      ).rejects.toThrow();
     });
   });
 });
