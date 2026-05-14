@@ -14,6 +14,7 @@
 - CI/CDのインストール時間を短縮したい
 - npm公開時のレースコンディションに悩んでいる
 - node_modulesのサイズが問題になっている
+- git worktreeやAIコーディングエージェントの並列実行を行う
 
 ## 事前準備
 
@@ -38,13 +39,21 @@ npm install -g pnpm
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 ```
 
+### 3. バージョン選択
+
+| バージョン | enableGlobalVirtualStore | Node.js要件 |
+|-----------|------------------------|-------------|
+| v10.12+ | opt-in（実験的） | Node 18+ |
+| v11+ | グローバルインストールでデフォルト有効、プロジェクトはopt-in | Node 22+ |
+
+git worktreeやマルチエージェント開発を行う場合は`enableGlobalVirtualStore`の有効化を推奨。v10.12+で利用可能。v11はNode 22+必須のため、CI環境のNode.jsバージョンと合わせて判断する。
+
 ## 段階的移行手順
 
 ### Phase 1: 基本的な移行
 
 #### 1. クリーンアップ
 ```bash
-# 既存のnode_modulesを削除
 rm -rf node_modules
 rm -rf packages/*/node_modules
 rm -f package-lock.json
@@ -54,16 +63,36 @@ rm -f package-lock.json
 ```yaml
 packages:
   - 'packages/*'
+
+# git worktree / マルチエージェント開発向け（v10.12+）
+# enableGlobalVirtualStore: true
 ```
 
-#### 3. 初回インストール
+#### 3. 初回インストールとPhantom Dependencies検出
+
+pnpm移行で最も頻出する問題が**Phantom Dependencies（幽霊依存関係）**。npmのフラットなnode_modules構造では推移的依存関係を暗黙的にimportできるが、pnpmの厳密な依存管理ではpackage.jsonに宣言されていない依存は解決できなくなる。
+
 ```bash
-# pnpmで依存関係をインストール
+# まず通常インストールを試す
 pnpm install
 
-# エラーが出た場合は個別に対処
-pnpm install --shamefully-hoist  # 一時的な回避策
+# エラーが出る場合、一時的にshamefully-hoistでインストールし検出に進む
+pnpm install --shamefully-hoist
 ```
+
+**TypeScript（ESM）の検出**:
+```bash
+tsc --noEmit --no-bail 2>&1 | grep "Cannot find module"
+```
+
+**CommonJS形式の検出**:
+```bash
+pnpm dlx knip --include=unlisted,unresolved
+```
+
+検出された依存関係は明示的に各パッケージの`package.json`へ追加する。`shamefully-hoist`は一時的な回避策であり、最終的には解消を目指す。
+
+参考: [レガシー Monorepo を安全かつ素早く pnpm workspace に移行する方法](https://tech.plaid.co.jp/monorepo-pnpm-workspace-migration)（PLAID社、13パッケージ/約500ファイルのKARTE APIモノレポ移行事例）
 
 #### 4. package.jsonスクリプトの更新
 ```diff
@@ -77,6 +106,21 @@ pnpm install --shamefully-hoist  # 一時的な回避策
 +   "test:all": "pnpm run -r test"
   }
 }
+```
+
+#### 5. コマンドの置き換え
+```bash
+# postinstall
+# npm: npm run build --workspace=packages/core
+# pnpm: pnpm --filter @my-org/core build
+
+# グローバルツール
+# npm: npm install -g typescript
+# pnpm: pnpm add -g typescript
+
+# npx → pnpm dlx / pnpm exec
+# npm: npx tsc --version
+# pnpm: pnpm dlx tsc --version
 ```
 
 ### Phase 2: workspace記法の変換
@@ -146,14 +190,13 @@ jobs:
 
 +     - name: Setup pnpm
 +       uses: pnpm/action-setup@v4
-+       with:
-+         version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+-         node-version: '20'
 -         cache: 'npm'
++         node-version: '22'
 +         cache: 'pnpm'
 
       - name: Install dependencies
@@ -167,7 +210,8 @@ jobs:
 
 #### GitLab CI
 ```diff
-image: node:20
+-image: node:20
++image: node:22
 
 +before_script:
 +  - npm install -g pnpm
@@ -189,131 +233,97 @@ test:
 +   - pnpm test
 ```
 
-### Phase 4: 特殊ケースの対処
-
-#### postinstallスクリプトの移行
-```json
-{
-  "scripts": {
-    // npmの場合
-    "postinstall": "npm run build --workspace=packages/core",
-
-    // pnpmの場合
-    "postinstall": "pnpm --filter @my-org/core build"
-  }
-}
-```
-
-#### グローバルツールの移行
-```bash
-# npmの場合
-npm install -g typescript
-
-# pnpmの場合
-pnpm add -g typescript
-```
-
-#### npxの代替
-```bash
-# npmの場合
-npx tsc --version
-
-# pnpmの場合
-pnpm dlx tsc --version
-# または
-pnpm exec tsc --version
-```
-
 ## トラブルシューティング
 
-### 問題1: ピア依存関係の解決失敗
+### ピア依存関係の解決失敗
 ```
 ERR_PNPM_PEER_DEP_ISSUES
 ```
 
-**解決方法**:
 ```bash
 # .npmrcに追加
 echo "strict-peer-dependencies=false" >> .npmrc
 echo "auto-install-peers=true" >> .npmrc
 ```
 
-### 問題2: 特定のパッケージが見つからない
-```
-Cannot find module 'xxx'
-```
+### 特定パッケージのホイスト要求
 
-**解決方法**:
+一部のツール（eslint、prettier等）がホイストされた依存に依存する場合:
+
 ```bash
-# 一時的な回避策
-pnpm install --shamefully-hoist
-
-# または.npmrcに追加
+# .npmrcで特定パターンのみホイスト
 echo "public-hoist-pattern[]=*eslint*" >> .npmrc
 echo "public-hoist-pattern[]=*prettier*" >> .npmrc
 ```
 
-### 問題3: Changesetとの統合問題
+### preserveSymlinksとpnpmの競合
+
+レガシー設定で`preserveSymlinks: true`を使っている場合、pnpmのシンボリックリンクベースのnode_modules構造と競合する。
+
+- `preserveSymlinks`を`false`に変更
+- CommonJSをimportしているパッケージがある場合は`vite-plugin-commonjs`等で対処
+
+### pnpm --filterの静かな失敗
+
+`pnpm --filter`でパターンがマッチしない場合、デフォルトではエラーにならず静かに成功する。CIで意図しないスキップが発生する原因になる。
+
+```bash
+pnpm --filter "@my-org/app" --fail-if-no-match build
+```
+
+### Changesetとの統合問題
 ```
 Error: You cannot publish over the previously published versions
 ```
 
-**原因**: Changesetの並列公開とnpmのレースコンディション
-
-**解決方法**:
+Changesetの並列公開とnpmのレースコンディション。pnpmの順序公開で解決:
 ```json
 {
   "scripts": {
-    // npmの並列公開（問題あり）
-    "changeset:publish": "changeset publish",
-
-    // pnpmの順序公開（解決）
     "changeset:publish": "pnpm publish -r --no-git-checks"
   }
 }
 ```
 
-### 問題4: Docker環境での問題
+### Docker環境での問題
 ```dockerfile
-# 修正前
-FROM node:20
-COPY package*.json ./
-RUN npm ci --only=production
-
-# 修正後
-FROM node:20
+FROM node:22
 RUN npm install -g pnpm
-COPY pnpm-lock.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/*/package.json ./packages/
 RUN pnpm install --frozen-lockfile --prod
+```
+
+## enableGlobalVirtualStoreの活用
+
+git worktreeやAIコーディングエージェントの並列実行環境では、`enableGlobalVirtualStore`の有効化を推奨。同一の依存ツリーを持つworktree間でnode_modulesを共有し、2つ目以降のworktreeではシンボリックリンク作成のみで`pnpm install`が完了する。
+
+```yaml
+# pnpm-workspace.yaml
+enableGlobalVirtualStore: true
 ```
 
 ## パフォーマンス比較
 
-### インストール時間の測定
+### インストール時間
 ```bash
-# npmの場合
-time npm ci
-# real 2m30s
+# npm
+time npm ci          # real 2m30s
 
-# pnpmの場合
-time pnpm install --frozen-lockfile
-# real 0m45s
+# pnpm
+time pnpm install --frozen-lockfile  # real 0m45s
 ```
 
-### ディスク使用量の比較
+### ディスク使用量
 ```bash
-# npmの場合
-du -sh node_modules
-# 850M
+# npm
+du -sh node_modules  # 850M
 
-# pnpmの場合
-du -sh node_modules
-# 320M
+# pnpm
+du -sh node_modules  # 320M
 ```
 
 ## ロールバック手順
-
-万が一問題が発生した場合のロールバック：
 
 ```bash
 # 1. pnpm関連ファイルを削除
@@ -321,8 +331,7 @@ rm -f pnpm-lock.yaml
 rm -f pnpm-workspace.yaml
 rm -rf node_modules
 
-# 2. workspace:*記法を元に戻す
-# package.jsonを手動で編集
+# 2. workspace:*記法を元に戻す（package.jsonを手動で編集）
 
 # 3. package-lock.jsonを復元
 cp package-lock.json.backup package-lock.json
@@ -333,36 +342,24 @@ npm ci
 
 ## 移行チェックリスト
 
-### 必須項目
+### 必須
 - [ ] pnpm-workspace.yamlを作成
+- [ ] Phantom Dependenciesを検出・解消
 - [ ] workspace:*記法に変換
 - [ ] package.jsonのスクリプトを更新
 - [ ] CI/CDワークフローを更新
-- [ ] .gitignoreからpnpm-lock.yamlを削除
+- [ ] .gitignoreにpnpm-lock.yamlが含まれていないことを確認
 - [ ] READMEのインストール手順を更新
 
-### 推奨項目
-- [ ] .npmrcを設定
-- [ ] prepublishOnlyスクリプトを追加
-- [ ] ローカル開発環境の確認
+### 推奨
+- [ ] .npmrcを設定（ピア依存関係、ホイストパターン）
+- [ ] enableGlobalVirtualStoreの有効化を検討
+- [ ] `--fail-if-no-match`をCIスクリプトに追加
 - [ ] チーム全体への周知
-- [ ] ドキュメントの更新
 
-### 検証項目
+### 検証
 - [ ] `pnpm install`が成功
 - [ ] `pnpm build`が成功
 - [ ] `pnpm test`が成功
 - [ ] CI/CDパイプラインが成功
 - [ ] npm公開が成功（該当する場合）
-
-## まとめ
-
-npmからpnpmへの移行は、以下のステップで安全に実行できます：
-
-1. **段階的な移行**: 一度にすべてを変更せず、段階的に進める
-2. **workspace:*記法**: 内部パッケージの参照を明確化
-3. **CI/CD対応**: GitHub ActionsやGitLab CIの設定を更新
-4. **トラブルシューティング**: 問題が発生しても解決策がある
-5. **ロールバック可能**: 問題があれば元に戻せる
-
-移行により、ビルド時間の短縮、ディスク容量の削減、より信頼性の高いパッケージ管理が実現できます。
