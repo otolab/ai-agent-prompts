@@ -216,8 +216,8 @@ class ModeController {
         const content = await this.resolveReferences(mode.body, mode.filePath);
         results.push(`【${displayName}開始】\n\n${content}`);
       } else {
-        // 従来通りファイル読み込みを指示
-        results.push(`【${displayName}開始】\n\n${'━'.repeat(60)}\n⚠️ TodoWriteツールで以下のファイルの読み込みを最優先としてスケジュールしてください\n\nこのファイルには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nファイル: ${mode.filePath}`);
+        // リソースの読み込みを指示
+        results.push(`【${displayName}開始】\n\n${'━'.repeat(60)}\n⚠️ 以下のリソースの読み込みを最優先としてスケジュールしてください\n\nこのリソースには作業を正しく効率的に進めるための重要な情報が含まれています。\n読まずに作業を進めると、手戻りや誤った実装につながります。\n\nサマリが存在する場合でも原文を読み直してください。\n${'━'.repeat(60)}\n\nリソース: mode://mode/${normalizedName}`);
       }
     }
 
@@ -317,6 +317,10 @@ class ModeController {
       for (const displayName of set) {
         result += `  🟢 ${displayName}\n`;
       }
+      result += `\n📖 読み取るべきリソース:\n`;
+      for (const modeName of this.activeModes) {
+        result += `  - mode://mode/${modeName}\n`;
+      }
     } else {
       result += 'アクティブなモード: なし\n';
     }
@@ -407,6 +411,18 @@ async function main() {
     {
       name: 'mode-controller',
       version: '1.0.0',
+      instructions: [
+        'mode-controllerは「アシスタント動作モード」を管理します。',
+        '',
+        'アシスタント動作モードとは、継続的に行動指針とするべき基準です。',
+        'システムプロンプトやCLAUDE.mdとは異なり、常に影響されるべきものではなく、',
+        '状況によって切り替わるべきものです。',
+        'モードが有効であるあいだ、その指針の影響下に常に置かれます。',
+        '',
+        'モードはスキルではありません。',
+        'スキルは呼ばれて実行し完了する手順ですが、',
+        'モードは有効化されている間ずっと作業に介入し続ける姿勢です。',
+      ].join('\n'),
     },
     {
       capabilities: {
@@ -491,6 +507,10 @@ async function main() {
         statusText += `アクティブなモード (${activeModes.length}個):\n`;
         for (const mode of activeModes) {
           statusText += `  🟢 ${mode.displayName} (${mode.mode})\n`;
+        }
+        statusText += `\n📖 読み取るべきリソース:\n`;
+        for (const mode of activeModes) {
+          statusText += `  - mode://mode/${mode.mode}\n`;
         }
       } else {
         statusText += `現在のモード: なし\n`;
